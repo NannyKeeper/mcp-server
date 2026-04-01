@@ -1,0 +1,60 @@
+{
+  "name": "@nannykeeper/mcp-server",
+  "version": "1.0.0",
+  "description": "MCP server for calculating US household employer (nanny) taxes. All 50 states. Works with Claude, ChatGPT, and any MCP-compatible AI agent.",
+  "keywords": [
+    "mcp",
+    "nanny-tax",
+    "household-employer",
+    "payroll",
+    "tax-calculator",
+    "nanny-payroll",
+    "w2",
+    "schedule-h",
+    "fica",
+    "futa",
+    "nanny",
+    "household-employment",
+    "tax",
+    "ai-agent",
+    "claude",
+    "model-context-protocol"
+  ],
+  "author": "NannyKeeper <hello@nannykeeper.com>",
+  "license": "MIT",
+  "homepage": "https://www.nannykeeper.com/developers/mcp",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/imaznation/nannykeeper.git"
+  },
+  "bugs": {
+    "url": "https://github.com/imaznation/nannykeeper/issues"
+  },
+  "type": "module",
+  "bin": {
+    "nannykeeper-mcp": "./dist/index.js"
+  },
+  "main": "./dist/index.js",
+  "files": [
+    "dist",
+    "README.md",
+    "CLAUDE.md",
+    "AGENTS.md"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "start": "node dist/index.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.7.0"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

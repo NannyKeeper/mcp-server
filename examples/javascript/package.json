@@ -1,0 +1,8 @@
+{
+  "name": "nannykeeper-api-examples",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "calculate": "node calculate_taxes.js"
+  }
+}
