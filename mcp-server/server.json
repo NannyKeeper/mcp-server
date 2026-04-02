@@ -1,0 +1,29 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "com.nannykeeper.www/mcp-server",
+  "description": "Calculate US household employer (nanny) taxes for all 50 states via AI agents.",
+  "repository": {
+    "url": "https://github.com/imaznation/nannykeeper",
+    "source": "github"
+  },
+  "version": "1.0.2",
+  "packages": [
+    {
+      "registryType": "npm",
+      "identifier": "@nannykeeper/mcp-server",
+      "version": "1.0.2",
+      "transport": {
+        "type": "stdio"
+      },
+      "environmentVariables": [
+        {
+          "description": "NannyKeeper API key. Get a free key at https://www.nannykeeper.com/developers/keys",
+          "isRequired": true,
+          "format": "string",
+          "isSecret": true,
+          "name": "NANNYKEEPER_API_KEY"
+        }
+      ]
+    }
+  ]
+}
