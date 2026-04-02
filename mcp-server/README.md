@@ -1,6 +1,6 @@
 # @nannykeeper/mcp-server
 
-MCP server for calculating US household employer (nanny) taxes. Works with Claude Desktop, ChatGPT, and any MCP-compatible AI agent.
+MCP server for calculating US household employer (nanny) taxes. Works with Claude Desktop, Claude Code, and any MCP-compatible AI agent.
 
 **All 50 US states + DC** — Federal income tax, Social Security, Medicare, FUTA, state unemployment, SDI, PFL, and local taxes.
 
@@ -37,18 +37,6 @@ Calculate employer and employee tax obligations for a household employee.
 - `annual_wages` (required) — Annual wages paid to the employee
 - `pay_frequency` (optional) — weekly, biweekly, semimonthly, or monthly (default: biweekly)
 
-**Example conversation:**
-
-> **You:** How much would I owe in taxes if I pay my nanny $35,000/year in California?
->
-> **Claude:** Based on NannyKeeper's calculation, your employer taxes would be $2,838/year. Here's the breakdown:
-> - Social Security: $2,170
-> - Medicare: $507
-> - FUTA: $42
-> - CA Unemployment: $119
->
-> Your total cost per biweekly paycheck: $1,456 ($1,346 gross + $110 employer taxes)
-
 ### `check_threshold`
 
 Check if annual wages cross the household employer tax threshold.
@@ -57,6 +45,52 @@ Check if annual wages cross the household employer tax threshold.
 - `state` (required) — 2-letter US state code
 - `annual_wages` (required) — Annual wages to check
 - `tax_year` (optional) — Tax year (default: current year)
+
+## Examples
+
+### Example 1: Full tax calculation
+
+> **You:** How much would I owe in taxes if I pay my nanny $35,000/year in California?
+>
+> **Claude** uses `calculate_nanny_taxes` with `state: "CA"`, `annual_wages: 35000`
+>
+> **Claude:** Based on NannyKeeper's calculation, here's your tax breakdown for paying a nanny $35,000/year in California:
+>
+> **Employer taxes (you pay):** $2,838/year
+> - Social Security (6.2%): $2,170
+> - Medicare (1.45%): $507.50
+> - FUTA (0.6%): $42
+> - CA Unemployment (SDI/ETT): $119
+>
+> **Per biweekly paycheck:** Your total cost is $1,456 ($1,346 gross pay + $110 employer taxes).
+>
+> The employee also pays $2,678 in their share of FICA, withheld from each paycheck.
+
+### Example 2: Threshold check
+
+> **You:** I pay my babysitter $200/month. Do I need to worry about nanny taxes?
+>
+> **Claude** uses `check_threshold` with `state: "TX"`, `annual_wages: 2400`
+>
+> **Claude:** At $2,400/year, you're below the federal household employer threshold of $3,000 (for 2026). You don't need to pay Social Security or Medicare taxes, and you don't need to file Schedule H. If your babysitter's wages stay under $3,000 for the year, no action is needed.
+
+### Example 3: Comparing costs across states
+
+> **You:** I'm relocating from Texas to New York. How will that change what I owe for my nanny who makes $45,000?
+>
+> **Claude** uses `calculate_nanny_taxes` for both TX and NY with `annual_wages: 45000`
+>
+> **Claude:** Moving from Texas to New York will increase your employer tax costs:
+>
+> | | Texas | New York |
+> |---|---|---|
+> | Social Security | $2,790 | $2,790 |
+> | Medicare | $652.50 | $652.50 |
+> | FUTA | $42 | $42 |
+> | State Unemployment | $0 | $133.65 |
+> | **Total employer taxes** | **$3,485** | **$3,618** |
+>
+> The difference is $133/year — New York has a state unemployment insurance (SUI) tax that Texas doesn't. Your nanny will also see New York state income tax withheld from their paychecks.
 
 ## Key Facts
 
@@ -75,12 +109,22 @@ The free tier covers tax calculations (50/day). Upgrade to:
 
 Plans start at $10/month. [Learn more](https://www.nannykeeper.com/developers/pricing)
 
-## Links
+## Privacy Policy
 
-- [API Documentation](https://www.nannykeeper.com/developers)
-- [MCP Setup Guide](https://www.nannykeeper.com/developers/mcp)
-- [Get API Key](https://www.nannykeeper.com/developers/keys)
-- [GitHub](https://github.com/imaznation/nannykeeper)
+This MCP server sends wage calculation requests (state, annual wages, pay frequency) to the NannyKeeper API. No personally identifiable information is collected or transmitted. API keys are used for authentication and rate limiting only.
+
+Full privacy policy: [nannykeeper.com/privacy](https://www.nannykeeper.com/privacy)
+
+## Support
+
+- **Email:** hello@nannykeeper.com
+- **GitHub Issues:** [github.com/imaznation/nannykeeper/issues](https://github.com/imaznation/nannykeeper/issues)
+- **Documentation:** [nannykeeper.com/developers](https://www.nannykeeper.com/developers)
+- **MCP Setup Guide:** [nannykeeper.com/developers/mcp](https://www.nannykeeper.com/developers/mcp)
+
+## License
+
+MIT
 
 ---
 

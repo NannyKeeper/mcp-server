@@ -1,6 +1,6 @@
 {
   "name": "@nannykeeper/mcp-server",
-  "version": "1.0.2",
+  "version": "1.1.0",
   "mcpName": "com.nannykeeper.www/mcp-server",
   "description": "MCP server for calculating US household employer (nanny) taxes. All 50 states. Works with Claude, ChatGPT, and any MCP-compatible AI agent.",
   "keywords": [
@@ -38,6 +38,7 @@
   "main": "./dist/index.js",
   "files": [
     "dist",
+    "manifest.json",
     "README.md",
     "CLAUDE.md",
     "AGENTS.md"
@@ -45,7 +46,9 @@
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch",
-    "start": "node dist/index.js"
+    "start": "node dist/index.js",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.0",
@@ -53,7 +56,8 @@
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
-    "typescript": "^5.7.0"
+    "typescript": "^5.7.0",
+    "vitest": "^4.1.2"
   },
   "engines": {
     "node": ">=18"

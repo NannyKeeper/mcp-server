@@ -1,0 +1,32 @@
+{
+  "manifest_version": "0.3",
+  "name": "nannykeeper",
+  "version": "1.1.0",
+  "description": "Calculate US household employer (nanny) taxes for all 50 states. Get federal and state tax breakdowns, threshold checks, and per-paycheck costs.",
+  "author": {
+    "name": "imaznation",
+    "url": "https://github.com/imaznation"
+  },
+  "homepage": "https://www.nannykeeper.com/developers/mcp",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/imaznation/nannykeeper"
+  },
+  "license": "MIT",
+  "privacy_policies": [
+    "https://www.nannykeeper.com/privacy"
+  ],
+  "server": {
+    "type": "node",
+    "entry_point": "dist/index.js",
+    "mcp_config": {
+      "command": "node",
+      "args": [
+        "${__dirname}/dist/index.js"
+      ],
+      "env": {
+        "NANNYKEEPER_API_KEY": ""
+      }
+    }
+  }
+}
