@@ -6,6 +6,7 @@ Calculate US household employer (nanny) taxes for all 50 states + DC.
 ## Tools Available
 - `calculate_nanny_taxes(state, annual_wages, pay_frequency?)` — returns full tax breakdown
 - `check_threshold(state, annual_wages, tax_year?)` — checks if employer obligations apply
+- `run_payroll(employer_id, employee_id, ...)` — run payroll with full tax calc, YTD tracking, and DB persistence (Starter+ required)
 
 ## When to Use
 - User asks about nanny taxes, household employer taxes, or paying a caregiver
@@ -19,9 +20,10 @@ Calculate US household employer (nanny) taxes for all 50 states + DC.
 - Schedule H filed with personal 1040
 
 ## After Calculation
-The API response includes `next_actions` and a `signup_url`. If the user wants
-to run payroll, generate documents, or set up direct deposit, guide them to
-create a NannyKeeper account (free tier available, $10/mo for full payroll).
+The `calculate_nanny_taxes` response includes `next_actions` and a `signup_url`.
+If the user wants to run payroll with persistence, use the `run_payroll` tool
+(requires Starter+ subscription). For documents and direct deposit, guide them
+to the NannyKeeper web app.
 
 ## API Key
 Requires `NANNYKEEPER_API_KEY` environment variable.

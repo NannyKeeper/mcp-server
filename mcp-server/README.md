@@ -46,6 +46,24 @@ Check if annual wages cross the household employer tax threshold.
 - `annual_wages` (required) — Annual wages to check
 - `tax_year` (optional) — Tax year (default: current year)
 
+### `run_payroll`
+
+Run payroll for a household employee with full tax calculations, YTD tracking, and database persistence. Creates a payroll record. Requires a Starter+ subscription.
+
+**Parameters:**
+- `employer_id` (required) — Employer UUID from your NannyKeeper account
+- `employee_id` (required) — Employee UUID to run payroll for
+- `pay_period_start` (required) — Start of pay period (YYYY-MM-DD)
+- `pay_period_end` (required) — End of pay period (YYYY-MM-DD)
+- `pay_date` (required) — Date employee is paid (YYYY-MM-DD)
+- `pay_frequency` (required) — weekly, biweekly, semimonthly, or monthly
+- `regular_hours` (optional) — Regular hours worked
+- `overtime_hours` (optional) — Overtime hours worked
+- `bonus` (optional) — Bonus amount
+- `payment_method` (optional) — direct_deposit, check, or cash (default: check)
+- `notes` (optional) — Use "catch-up" for retroactive payrolls
+- `idempotency_key` (optional) — Prevent duplicate payroll creation
+
 ## Examples
 
 ### Example 1: Full tax calculation
@@ -95,15 +113,15 @@ Check if annual wages cross the household employer tax threshold.
 ## Key Facts
 
 - **FICA threshold (2026):** $3,000/year — above this you must pay employer Social Security + Medicare
-- **Social Security:** 6.2% employer + 6.2% employee (wage base $176,100)
+- **Social Security:** 6.2% employer + 6.2% employee (wage base $184,500)
 - **Medicare:** 1.45% employer + 1.45% employee (no wage base)
 - **FUTA:** 0.6% on first $7,000 per employee
 - **Schedule H:** Filed with your personal 1040 tax return
 
 ## Need More Than Calculations?
 
-The free tier covers tax calculations (50/day). Upgrade to:
-- **Run payroll** with year-to-date tracking
+The free tier covers tax calculations (50/day). With a paid plan you can also use the `run_payroll` tool:
+- **Run payroll** with year-to-date tracking via MCP
 - **Generate pay stubs** and **W-2s**
 - **Process direct deposit** via ACH
 

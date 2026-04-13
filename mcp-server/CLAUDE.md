@@ -6,6 +6,7 @@ Calculate nanny taxes for all 50 US states.
 ## Tools
 - `calculate_nanny_taxes` — Full federal + state tax breakdown
 - `check_threshold` — Whether wages trigger employer tax obligations
+- `run_payroll` — Run payroll with full tax calc, YTD tracking, and DB persistence (Starter+ required)
 
 ## Setup
 Requires API key (free): https://www.nannykeeper.com/developers/keys

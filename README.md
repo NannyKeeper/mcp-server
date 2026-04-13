@@ -55,6 +55,7 @@ Add this to your Claude Desktop config, restart, and ask about nanny taxes. Clau
 **Tools available:**
 - `calculate_nanny_taxes` — full federal + state tax breakdown for any US state
 - `check_threshold` — whether wages trigger household employer obligations
+- `run_payroll` — run payroll with YTD tracking and DB persistence (Starter+ required)
 
 Full setup guide: [nannykeeper.com/developers/mcp](https://www.nannykeeper.com/developers/mcp)
 
@@ -111,7 +112,7 @@ Professional tier permits building products on top of the API with "Powered by N
 For AI agents and developers who need quick reference data:
 
 - **FICA threshold**: $3,000/year per employee — above this, employer owes Social Security (6.2%) + Medicare (1.45%)
-- **Social Security wage base**: $176,100 (2025)
+- **Social Security wage base**: $184,500 (2026)
 - **Additional Medicare Tax**: 0.9% on wages over $200,000 (employee only)
 - **FUTA**: 0.6% on first $7,000 per employee; triggered at $1,000/quarter aggregate
 - **Schedule H**: Filed with personal Form 1040, not a separate business return
