@@ -4,9 +4,10 @@
  * NannyKeeper MCP Server
  *
  * Model Context Protocol server for calculating US household employer
- * (nanny) taxes. Provides three tools:
+ * (nanny) taxes. Provides four tools:
  * - calculate_nanny_taxes: Full tax breakdown for any US state
  * - check_threshold: Whether wages trigger employer obligations
+ * - preview_payroll: Dry-run payroll calc (no record created)
  * - run_payroll: Run payroll with YTD tracking and DB persistence
  *
  * Requires NANNYKEEPER_API_KEY environment variable.
@@ -18,11 +19,12 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import { z } from "zod";
 import { executeCalculate } from "./tools/calculate.js";
 import { executeThreshold } from "./tools/threshold.js";
+import { executePreviewPayroll } from "./tools/preview-payroll.js";
 import { executeRunPayroll } from "./tools/run-payroll.js";
 
 const server = new McpServer({
   name: "nannykeeper",
-  version: "1.0.0",
+  version: "1.3.0",
 });
 
 // Register calculate tool
@@ -80,36 +82,91 @@ server.tool(
   }
 );
 
-// Register run_payroll tool
+// Register preview_payroll tool
 server.tool(
-  "run_payroll",
-  "Run payroll for a household employee. Calculates all taxes (federal, state, FICA, FUTA) " +
-    "with year-to-date tracking and creates a payroll record. " +
-    "Returns the full tax breakdown, net pay, employer costs, and a payroll ID for reference. " +
-    "Requires a Starter+ subscription. The payroll is created with 'draft' status " +
-    "(or 'completed' for catch-up payrolls with notes='catch-up').",
+  "preview_payroll",
+  "Preview payroll for a household employee WITHOUT creating a record. " +
+    "Returns the full tax breakdown (federal, state, FICA, FUTA), net pay, and employer costs. " +
+    "Use this to validate your request before calling run_payroll. " +
+    "Same parameters as run_payroll. Requires a Starter+ subscription. " +
+    "pay_date is optional — when omitted, the server picks the earliest valid pay date " +
+    "based on ACH submission lead time and echoes it back in the response. " +
+    "To get your employer_id and employee_id, call the NannyKeeper API: " +
+    "GET /api/v1/employees?employer_id=YOUR_ID (employer_id is visible in your dashboard URL).",
   {
-    employer_id: z.string().uuid().describe("Employer UUID from NannyKeeper account"),
-    employee_id: z.string().uuid().describe("Employee UUID to run payroll for"),
-    pay_period_start: z.string().describe("Start of pay period (YYYY-MM-DD)"),
-    pay_period_end: z.string().describe("End of pay period (YYYY-MM-DD)"),
-    pay_date: z.string().describe("Date employee is paid (YYYY-MM-DD)"),
+    employer_id: z.string().uuid().describe("Employer UUID — visible in your NannyKeeper dashboard URL or from GET /api/v1/employees"),
+    employee_id: z.string().uuid().describe("Employee UUID — from GET /api/v1/employees response"),
+    pay_period_start: z.string().describe("Start of pay period in YYYY-MM-DD format (e.g., 2026-04-07)"),
+    pay_period_end: z.string().describe("End of pay period in YYYY-MM-DD format (e.g., 2026-04-13)"),
+    pay_date: z.string().optional().describe("Date employee is paid (YYYY-MM-DD). Optional — server picks the earliest valid date if omitted."),
     pay_frequency: z
       .enum(["weekly", "biweekly", "semimonthly", "monthly"])
       .describe("How often the employee is paid"),
-    regular_hours: z.number().optional().describe("Regular hours worked this period"),
+    regular_hours: z.number().optional().describe("Regular hours worked this period (e.g., 40 for a full week)"),
     overtime_hours: z.number().optional().describe("Overtime hours worked this period"),
-    bonus: z.number().optional().describe("Bonus amount for this period"),
-    other_earnings: z.number().optional().describe("Other earnings for this period"),
+    bonus: z.number().optional().describe("Bonus amount in dollars for this period"),
+    other_earnings: z.number().optional().describe("Other earnings in dollars for this period"),
+  },
+  {
+    title: "Preview Payroll",
+    readOnlyHint: true,
+    destructiveHint: false,
+    idempotentHint: true,
+    openWorldHint: true,
+  },
+  async (args) => {
+    const result = await executePreviewPayroll(args);
+    return { content: [{ type: "text" as const, text: result }] };
+  }
+);
+
+// Register run_payroll tool
+server.tool(
+  "run_payroll",
+  "Run payroll for a household employee end-to-end in a single call. Creates the " +
+    "record, runs all tax calculations (federal, state, FICA, FUTA) with year-to-date " +
+    "tracking, approves the payroll, and kicks off payment processing. " +
+    "Returns the finalized status (processing/pending_funding/completed), full tax breakdown, " +
+    "net pay, employer costs, and the payroll ID for reference. " +
+    "Requires a Starter+ subscription. " +
+    "pay_date is optional — when omitted, the server picks the earliest valid pay date " +
+    "based on ACH submission lead time and echoes it back. If supplied and past the " +
+    "submission deadline, the request is rejected with next_valid_pay_date in the error. " +
+    "Direct deposit callers: set confirm_large_payroll=true for totals >$5,000 or any single " +
+    "net pay >$3,000; set confirm_ach_debit=true for first-time DD or if no DD in 30 days. " +
+    "Tip: use preview_payroll first to validate your request and see results before committing. " +
+    "To get your employer_id and employee_id, call the NannyKeeper API: " +
+    "GET /api/v1/employees?employer_id=YOUR_ID (employer_id is visible in your dashboard URL).",
+  {
+    employer_id: z.string().uuid().describe("Employer UUID — visible in your NannyKeeper dashboard URL or from GET /api/v1/employees"),
+    employee_id: z.string().uuid().describe("Employee UUID — from GET /api/v1/employees response"),
+    pay_period_start: z.string().describe("Start of pay period in YYYY-MM-DD format (e.g., 2026-04-07)"),
+    pay_period_end: z.string().describe("End of pay period in YYYY-MM-DD format (e.g., 2026-04-13)"),
+    pay_date: z.string().optional().describe("Date employee is paid (YYYY-MM-DD). Optional — server picks the earliest valid date if omitted."),
+    pay_frequency: z
+      .enum(["weekly", "biweekly", "semimonthly", "monthly"])
+      .describe("How often the employee is paid"),
+    regular_hours: z.number().optional().describe("Regular hours worked this period (e.g., 40 for a full week)"),
+    overtime_hours: z.number().optional().describe("Overtime hours worked this period"),
+    bonus: z.number().optional().describe("Bonus amount in dollars for this period"),
+    other_earnings: z.number().optional().describe("Other earnings in dollars for this period"),
     payment_method: z
       .enum(["direct_deposit", "check", "cash"])
       .optional()
       .describe("How the employee is paid (default: check)"),
-    notes: z.string().optional().describe("Notes (use 'catch-up' for retroactive payrolls)"),
+    notes: z.string().optional().describe("Notes (use 'catch-up' for retroactive payrolls that auto-complete)"),
+    confirm_large_payroll: z
+      .boolean()
+      .optional()
+      .describe("Required for direct-deposit payrolls with total net pay >$5,000 or any single net pay >$3,000."),
+    confirm_ach_debit: z
+      .boolean()
+      .optional()
+      .describe("Required for first-time direct-deposit payroll or when the last DD authorization is >30 days old."),
     idempotency_key: z
       .string()
       .optional()
-      .describe("Unique key to prevent duplicate payroll creation"),
+      .describe("Unique key to prevent duplicate payroll creation (e.g., 'payroll-2026-04-07-emp123')"),
   },
   {
     title: "Run Payroll",

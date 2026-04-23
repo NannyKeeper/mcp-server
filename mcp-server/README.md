@@ -46,22 +46,41 @@ Check if annual wages cross the household employer tax threshold.
 - `annual_wages` (required) — Annual wages to check
 - `tax_year` (optional) — Tax year (default: current year)
 
+### `preview_payroll`
+
+Dry-run payroll calculation. Returns the full tax breakdown, net pay, and employer costs WITHOUT creating a payroll record. Use to validate your request before calling `run_payroll`. Requires a Starter+ subscription.
+
+**Parameters:**
+- `employer_id` (required) — Employer UUID from your NannyKeeper account
+- `employee_id` (required) — Employee UUID
+- `pay_period_start` (required) — Start of pay period (YYYY-MM-DD)
+- `pay_period_end` (required) — End of pay period (YYYY-MM-DD)
+- `pay_date` (optional) — Date employee is paid (YYYY-MM-DD). When omitted, the server picks the earliest valid pay date based on ACH submission lead time and echoes it back in the response.
+- `pay_frequency` (required) — weekly, biweekly, semimonthly, or monthly
+- `regular_hours` (optional) — Regular hours worked
+- `overtime_hours` (optional) — Overtime hours worked
+- `bonus` (optional) — Bonus amount
+- `other_earnings` (optional) — Other earnings
+
 ### `run_payroll`
 
-Run payroll for a household employee with full tax calculations, YTD tracking, and database persistence. Creates a payroll record. Requires a Starter+ subscription.
+Run payroll for a household employee **end-to-end in a single call** — creates, approves, and processes the payroll. Response reflects the finalized status (`processing`, `pending_funding`, or `completed`); no dashboard intervention needed. Requires a Starter+ subscription.
 
 **Parameters:**
 - `employer_id` (required) — Employer UUID from your NannyKeeper account
 - `employee_id` (required) — Employee UUID to run payroll for
 - `pay_period_start` (required) — Start of pay period (YYYY-MM-DD)
 - `pay_period_end` (required) — End of pay period (YYYY-MM-DD)
-- `pay_date` (required) — Date employee is paid (YYYY-MM-DD)
+- `pay_date` (optional) — Date employee is paid (YYYY-MM-DD). When omitted, the server picks the earliest valid pay date from today + ACH submission lead time. If supplied and past the submission deadline, the request is rejected with HTTP 400 + `next_valid_pay_date` in the error details so you can retry with a valid date.
 - `pay_frequency` (required) — weekly, biweekly, semimonthly, or monthly
 - `regular_hours` (optional) — Regular hours worked
 - `overtime_hours` (optional) — Overtime hours worked
 - `bonus` (optional) — Bonus amount
+- `other_earnings` (optional) — Other earnings
 - `payment_method` (optional) — direct_deposit, check, or cash (default: check)
 - `notes` (optional) — Use "catch-up" for retroactive payrolls
+- `confirm_large_payroll` (optional) — Required for direct-deposit payrolls with total net pay >$5,000 or any single net pay >$3,000
+- `confirm_ach_debit` (optional) — Required for first-ever DD payroll or when >30 days have elapsed since the last DD authorization
 - `idempotency_key` (optional) — Prevent duplicate payroll creation
 
 ## Examples

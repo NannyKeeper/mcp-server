@@ -1,17 +1,17 @@
 {
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "com.nannykeeper.www/mcp-server",
-  "description": "Calculate US household employer (nanny) taxes for all 50 states via AI agents.",
+  "description": "Calculate US household employer (nanny) taxes for all 50 states via AI agents. Preview and run payroll, generate W-2s and pay stubs.",
   "repository": {
     "url": "https://github.com/imaznation/nannykeeper",
     "source": "github"
   },
-  "version": "1.0.2",
+  "version": "1.4.0",
   "packages": [
     {
       "registryType": "npm",
       "identifier": "@nannykeeper/mcp-server",
-      "version": "1.0.2",
+      "version": "1.4.0",
       "transport": {
         "type": "stdio"
       },

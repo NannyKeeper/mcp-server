@@ -1,13 +1,13 @@
 /**
- * run_payroll MCP tool
+ * preview_payroll MCP tool
  *
- * Calls the NannyKeeper API to run payroll for a household employee.
- * Creates a payroll record with full tax calculations and YTD tracking.
+ * Calls the NannyKeeper API to preview payroll without creating a record.
+ * Returns full tax breakdown and net pay — use to validate before run_payroll.
  */
 
 const API_BASE = process.env.NANNYKEEPER_API_URL || "https://www.nannykeeper.com";
 
-export async function executeRunPayroll(args: {
+export async function executePreviewPayroll(args: {
   employer_id: string;
   employee_id: string;
   pay_period_start: string;
@@ -18,11 +18,6 @@ export async function executeRunPayroll(args: {
   overtime_hours?: number;
   bonus?: number;
   other_earnings?: number;
-  payment_method?: string;
-  notes?: string;
-  confirm_large_payroll?: boolean;
-  confirm_ach_debit?: boolean;
-  idempotency_key?: string;
 }): Promise<string> {
   const apiKey = process.env.NANNYKEEPER_API_KEY;
   if (!apiKey) {
@@ -33,18 +28,12 @@ export async function executeRunPayroll(args: {
   }
 
   try {
-    const headers: Record<string, string> = {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-    };
-
-    if (args.idempotency_key) {
-      headers["Idempotency-Key"] = args.idempotency_key;
-    }
-
-    const response = await fetch(`${API_BASE}/api/v1/payroll/run`, {
+    const response = await fetch(`${API_BASE}/api/v1/payroll/preview`, {
       method: "POST",
-      headers,
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
       body: JSON.stringify({
         employer_id: args.employer_id,
         pay_period_start: args.pay_period_start,
@@ -59,27 +48,14 @@ export async function executeRunPayroll(args: {
             overtime_hours: args.overtime_hours,
             bonus: args.bonus,
             other_earnings: args.other_earnings,
-            payment_method: args.payment_method || "check",
           },
         ],
-        notes: args.notes,
-        ...(args.confirm_large_payroll !== undefined
-          ? { confirm_large_payroll: args.confirm_large_payroll }
-          : {}),
-        ...(args.confirm_ach_debit !== undefined
-          ? { confirm_ach_debit: args.confirm_ach_debit }
-          : {}),
       }),
     });
 
     const data = await response.json();
 
     if (!response.ok) {
-      if (response.status === 429) {
-        return JSON.stringify({
-          error: "Rate limit exceeded. Upgrade at nannykeeper.com/developers/pricing",
-        });
-      }
       // Include example from error response if available (LLM self-correction)
       if (data.error?.example) {
         return JSON.stringify({
