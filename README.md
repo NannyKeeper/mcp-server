@@ -55,7 +55,8 @@ Add this to your Claude Desktop config, restart, and ask about nanny taxes. Clau
 **Tools available:**
 - `calculate_nanny_taxes` — full federal + state tax breakdown for any US state
 - `check_threshold` — whether wages trigger household employer obligations
-- `run_payroll` — run payroll with YTD tracking and DB persistence (Starter+ required)
+- `preview_payroll` — dry-run a payroll calculation (no DB writes)
+- `run_payroll` — run payroll end-to-end with YTD tracking and DB persistence (Starter+ required). As of v1.5.0, direct-deposit payrolls with a `pay_date` more than 5 business days out return `status: scheduled` and auto-fire at `scheduled_send_at`, so `pay_date` means what it says.
 
 Full setup guide: [nannykeeper.com/developers/mcp](https://www.nannykeeper.com/developers/mcp)
 
