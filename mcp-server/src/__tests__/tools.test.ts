@@ -584,4 +584,87 @@ describe("executeRunPayroll (run_payroll)", () => {
 
     expect(parsed.error).toContain("NANNYKEEPER_API_KEY");
   });
+
+  // ── v1.5.0: scheduled-payroll return status ────────────────────────────
+
+  it("passes through scheduled status, scheduled_send_at, and is_estimated when the API schedules", async () => {
+    // API returns status:'scheduled' + scheduled_send_at for far-future DD
+    // pay_dates. The MCP tool is a passthrough — we verify no fields are
+    // dropped on their way to the agent.
+    const scheduledResponse = {
+      success: true,
+      data: {
+        payroll_id: "payroll-uuid",
+        status: "scheduled",
+        scheduled_send_at: "2026-04-28T19:00:00.000Z",
+        is_estimated: true,
+        pay_date_defaulted: false,
+        pay_period: {
+          start: "2026-04-01",
+          end: "2026-04-14",
+          pay_date: "2026-05-04",
+          frequency: "biweekly",
+        },
+        totals: {
+          gross_pay: 2000,
+          total_deductions: 200,
+          total_net_pay: 1800,
+          total_employer_taxes: 165,
+          total_cost: 2165,
+        },
+      },
+    };
+    global.fetch = vi
+      .fn()
+      .mockResolvedValue(makeFetchResponse(scheduledResponse, 200));
+
+    const result = await executeRunPayroll({
+      ...RUN_ARGS_BASE,
+      pay_date: "2026-05-04",
+    });
+    const parsed = JSON.parse(result);
+
+    // MCP tool returns the full API envelope (`{success, data, meta}`).
+    // The new fields sit on `data` — verify they made it through.
+    expect(parsed.data.status).toBe("scheduled");
+    expect(parsed.data.scheduled_send_at).toBe("2026-04-28T19:00:00.000Z");
+    expect(parsed.data.is_estimated).toBe(true);
+  });
+
+  it("passes through processing status cleanly (v1.4.0-compat regression)", async () => {
+    // Regression: ensure the scheduled branch didn't break the in-window
+    // path. v1.4.0 callers expect status='processing'/'pending_funding'/
+    // 'completed' and no scheduled_send_at field on these responses.
+    const immediateResponse = {
+      success: true,
+      data: {
+        payroll_id: "payroll-uuid",
+        status: "processing",
+        pay_date_defaulted: false,
+        pay_period: {
+          start: "2026-04-01",
+          end: "2026-04-14",
+          pay_date: "2026-04-24",
+          frequency: "biweekly",
+        },
+        totals: {
+          gross_pay: 2000,
+          total_deductions: 200,
+          total_net_pay: 1800,
+          total_employer_taxes: 165,
+          total_cost: 2165,
+        },
+      },
+    };
+    global.fetch = vi
+      .fn()
+      .mockResolvedValue(makeFetchResponse(immediateResponse, 200));
+
+    const result = await executeRunPayroll(RUN_ARGS_BASE);
+    const parsed = JSON.parse(result);
+
+    expect(parsed.data.status).toBe("processing");
+    expect(parsed.data.scheduled_send_at).toBeUndefined();
+    expect(parsed.data.is_estimated).toBeUndefined();
+  });
 });

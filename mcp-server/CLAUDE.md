@@ -7,11 +7,12 @@ Calculate nanny taxes for all 50 US states.
 - `calculate_nanny_taxes` — Full federal + state tax breakdown
 - `check_threshold` — Whether wages trigger employer tax obligations
 - `preview_payroll` — Dry-run payroll calc, returns taxes/net pay without creating a record (Starter+ required)
-- `run_payroll` — End-to-end payroll: create, approve, and process in a single call. Finalized response reflects real status (processing / pending_funding / completed). No UI intervention needed. (Starter+ required)
+- `run_payroll` — End-to-end payroll: create, approve, and process (or schedule) in a single call. Finalized response reflects real status (`processing` / `pending_funding` / `completed` / **`scheduled`** as of 1.5.0). No UI intervention needed. (Starter+ required)
 
 ## Pay-date handling (run_payroll, preview_payroll)
 - `pay_date` is optional. When omitted, the server picks the earliest valid pay date based on ACH submission lead time (5 business days ahead, holiday-aware) and echoes it back in the response.
 - If `pay_date` is supplied and past the submission deadline, the API rejects with HTTP 400 and includes `next_valid_pay_date` in the error details for self-correction.
+- **v1.5.0**: If `pay_date` is more than 5 business days in the future on a DD payroll, the response status is `scheduled`. The payroll will auto-fire at `scheduled_send_at` (5 biz days before `pay_date`). The `net_pay` and tax amounts in the response are estimates — they're recomputed at fire time if YTD or rate configs changed. `is_estimated: true` is set when this happens so callers can surface that to users.
 
 ## Confirmation flags (run_payroll)
 API callers with direct-deposit payments must tick the same safety gates the UI does:

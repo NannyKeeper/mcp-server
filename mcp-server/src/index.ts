@@ -91,6 +91,8 @@ server.tool(
     "Same parameters as run_payroll. Requires a Starter+ subscription. " +
     "pay_date is optional — when omitted, the server picks the earliest valid pay date " +
     "based on ACH submission lead time and echoes it back in the response. " +
+    "v1.5.0: if pay_date is more than 5 business days in the future, the response includes " +
+    "is_estimated=true — those numbers will be recomputed at fire time if the user schedules. " +
     "To get your employer_id and employee_id, call the NannyKeeper API: " +
     "GET /api/v1/employees?employer_id=YOUR_ID (employer_id is visible in your dashboard URL).",
   {
@@ -126,12 +128,16 @@ server.tool(
   "Run payroll for a household employee end-to-end in a single call. Creates the " +
     "record, runs all tax calculations (federal, state, FICA, FUTA) with year-to-date " +
     "tracking, approves the payroll, and kicks off payment processing. " +
-    "Returns the finalized status (processing/pending_funding/completed), full tax breakdown, " +
+    "Returns the finalized status (processing/pending_funding/completed/scheduled) plus full tax breakdown, " +
     "net pay, employer costs, and the payroll ID for reference. " +
     "Requires a Starter+ subscription. " +
     "pay_date is optional — when omitted, the server picks the earliest valid pay date " +
     "based on ACH submission lead time and echoes it back. If supplied and past the " +
     "submission deadline, the request is rejected with next_valid_pay_date in the error. " +
+    "If pay_date is more than 5 business days in the future on a DD payroll, status=scheduled " +
+    "and the payroll will auto-fire at scheduled_send_at (5 biz days before pay_date). " +
+    "Scheduled responses include is_estimated=true — numbers may shift slightly at fire time " +
+    "if YTD or rate configs change between approve and fire. " +
     "Direct deposit callers: set confirm_large_payroll=true for totals >$5,000 or any single " +
     "net pay >$3,000; set confirm_ach_debit=true for first-time DD or if no DD in 30 days. " +
     "Tip: use preview_payroll first to validate your request and see results before committing. " +

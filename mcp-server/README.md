@@ -64,7 +64,9 @@ Dry-run payroll calculation. Returns the full tax breakdown, net pay, and employ
 
 ### `run_payroll`
 
-Run payroll for a household employee **end-to-end in a single call** — creates, approves, and processes the payroll. Response reflects the finalized status (`processing`, `pending_funding`, or `completed`); no dashboard intervention needed. Requires a Starter+ subscription.
+Run payroll for a household employee **end-to-end in a single call** — creates, approves, and processes (or schedules) the payroll. Response reflects the finalized status (`processing`, `pending_funding`, `completed`, or `scheduled` as of v1.5.0); no dashboard intervention needed. Requires a Starter+ subscription.
+
+**Scheduled payrolls (v1.5.0):** When `pay_date` is more than 5 business days in the future on a direct-deposit payroll, the response status is `scheduled`. Two additional fields come back: `scheduled_send_at` (ISO UTC timestamp — when the payroll will auto-fire) and `is_estimated: true` (the returned net pay and tax amounts will be recomputed against current YTD and rate configs at fire time, so they may shift slightly). In-window pay dates fire immediately as before.
 
 **Parameters:**
 - `employer_id` (required) — Employer UUID from your NannyKeeper account
