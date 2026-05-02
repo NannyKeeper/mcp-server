@@ -21,6 +21,12 @@ API callers with direct-deposit payments must tick the same safety gates the UI 
 
 These flags exist even for server-to-server callers as a safety measure. Agents should only set them after verifying the amounts with the user.
 
+## Voluntary set-aside (run_payroll, preview_payroll)
+The optional `voluntary_set_aside: { skip?, amount? }` field overrides the employee's recurring set-aside rule for a single paycheck. The recurring rule (e.g., 2% of gross for OH municipal courtesy withholding) is configured via the dashboard — this field can only override or skip per-payroll. Omit the field to apply the rule normally.
+
+- `voluntary_set_aside: { skip: true }` — bypass the rule for this paycheck
+- `voluntary_set_aside: { amount: 5.00 }` — override the computed amount for this paycheck
+
 ## Setup
 Requires API key (free): https://www.nannykeeper.com/developers/keys
 Set `NANNYKEEPER_API_KEY` env var.

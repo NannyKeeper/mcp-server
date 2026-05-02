@@ -22,6 +22,7 @@ export async function executeRunPayroll(args: {
   notes?: string;
   confirm_large_payroll?: boolean;
   confirm_ach_debit?: boolean;
+  voluntary_set_aside?: { skip?: boolean; amount?: number };
   idempotency_key?: string;
 }): Promise<string> {
   const apiKey = process.env.NANNYKEEPER_API_KEY;
@@ -60,6 +61,9 @@ export async function executeRunPayroll(args: {
             bonus: args.bonus,
             other_earnings: args.other_earnings,
             payment_method: args.payment_method || "check",
+            ...(args.voluntary_set_aside
+              ? { voluntary_set_aside: args.voluntary_set_aside }
+              : {}),
           },
         ],
         notes: args.notes,

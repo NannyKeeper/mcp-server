@@ -1,7 +1,7 @@
 {
   "manifest_version": "0.3",
   "name": "nannykeeper",
-  "version": "1.5.0",
+  "version": "1.6.0",
   "description": "Calculate US household employer (nanny) taxes for all 50 states. Preview and run payroll, generate W-2s and pay stubs. 4 tools: calculate, threshold, preview, run.",
   "author": {
     "name": "imaznation",

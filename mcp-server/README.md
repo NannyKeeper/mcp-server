@@ -61,6 +61,7 @@ Dry-run payroll calculation. Returns the full tax breakdown, net pay, and employ
 - `overtime_hours` (optional) — Overtime hours worked
 - `bonus` (optional) — Bonus amount
 - `other_earnings` (optional) — Other earnings
+- `voluntary_set_aside` (optional, v1.6.0+) — Override or skip the employee's recurring voluntary set-aside rule for this paycheck only. Object with `skip` (boolean) or `amount` (number, $0–$9,999). The recurring rule is configured via the dashboard; omit this field to apply it normally.
 
 ### `run_payroll`
 
@@ -83,6 +84,7 @@ Run payroll for a household employee **end-to-end in a single call** — creates
 - `notes` (optional) — Use "catch-up" for retroactive payrolls
 - `confirm_large_payroll` (optional) — Required for direct-deposit payrolls with total net pay >$5,000 or any single net pay >$3,000
 - `confirm_ach_debit` (optional) — Required for first-ever DD payroll or when >30 days have elapsed since the last DD authorization
+- `voluntary_set_aside` (optional, v1.6.0+) — Override or skip the employee's recurring voluntary set-aside rule for this paycheck only. Object with `skip` (boolean) or `amount` (number, $0–$9,999). The recurring rule is configured via the dashboard; omit this field to apply it normally.
 - `idempotency_key` (optional) — Prevent duplicate payroll creation
 
 ## Examples

@@ -18,6 +18,7 @@ export async function executePreviewPayroll(args: {
   overtime_hours?: number;
   bonus?: number;
   other_earnings?: number;
+  voluntary_set_aside?: { skip?: boolean; amount?: number };
 }): Promise<string> {
   const apiKey = process.env.NANNYKEEPER_API_KEY;
   if (!apiKey) {
@@ -48,6 +49,9 @@ export async function executePreviewPayroll(args: {
             overtime_hours: args.overtime_hours,
             bonus: args.bonus,
             other_earnings: args.other_earnings,
+            ...(args.voluntary_set_aside
+              ? { voluntary_set_aside: args.voluntary_set_aside }
+              : {}),
           },
         ],
       }),

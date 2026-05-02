@@ -108,6 +108,15 @@ server.tool(
     overtime_hours: z.number().optional().describe("Overtime hours worked this period"),
     bonus: z.number().optional().describe("Bonus amount in dollars for this period"),
     other_earnings: z.number().optional().describe("Other earnings in dollars for this period"),
+    voluntary_set_aside: z
+      .object({
+        skip: z.boolean().optional().describe("Skip the active set-aside rule for this paycheck only"),
+        amount: z.number().min(0).max(9999).optional().describe("Override the rule's computed amount for this paycheck only"),
+      })
+      .optional()
+      .describe(
+        "Override or skip the employee's voluntary post-tax set-aside rule for this paycheck only. The recurring rule itself is configured via the dashboard. Omit this field to apply the rule normally."
+      ),
   },
   {
     title: "Preview Payroll",
@@ -169,6 +178,15 @@ server.tool(
       .boolean()
       .optional()
       .describe("Required for first-time direct-deposit payroll or when the last DD authorization is >30 days old."),
+    voluntary_set_aside: z
+      .object({
+        skip: z.boolean().optional().describe("Skip the active set-aside rule for this paycheck only"),
+        amount: z.number().min(0).max(9999).optional().describe("Override the rule's computed amount for this paycheck only"),
+      })
+      .optional()
+      .describe(
+        "Override or skip the employee's voluntary post-tax set-aside rule for this paycheck only. The recurring rule itself is configured via the dashboard. Omit this field to apply the rule normally."
+      ),
     idempotency_key: z
       .string()
       .optional()
