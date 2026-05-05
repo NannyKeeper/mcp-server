@@ -4,13 +4,13 @@
   "version": "1.6.0",
   "description": "Calculate US household employer (nanny) taxes for all 50 states. Preview and run payroll, generate W-2s and pay stubs. 4 tools: calculate, threshold, preview, run.",
   "author": {
-    "name": "imaznation",
-    "url": "https://github.com/imaznation"
+    "name": "nannykeeper",
+    "url": "https://github.com/nannykeeper"
   },
   "homepage": "https://www.nannykeeper.com/developers/mcp",
   "repository": {
     "type": "git",
-    "url": "https://github.com/imaznation/nannykeeper"
+    "url": "https://github.com/nannykeeper/mcp-server"
   },
   "license": "MIT",
   "privacy_policies": [

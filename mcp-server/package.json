@@ -26,10 +26,10 @@
   "homepage": "https://www.nannykeeper.com/developers/mcp",
   "repository": {
     "type": "git",
-    "url": "https://github.com/imaznation/nannykeeper.git"
+    "url": "https://github.com/nannykeeper/mcp-server.git"
   },
   "bugs": {
-    "url": "https://github.com/imaznation/nannykeeper/issues"
+    "url": "https://github.com/nannykeeper/mcp-server/issues"
   },
   "type": "module",
   "bin": {

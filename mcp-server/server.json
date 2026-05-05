@@ -3,7 +3,7 @@
   "name": "com.nannykeeper.www/mcp-server",
   "description": "Calculate US household employer (nanny) taxes + run payroll via AI agents. All 50 states.",
   "repository": {
-    "url": "https://github.com/imaznation/nannykeeper",
+    "url": "https://github.com/nannykeeper/mcp-server",
     "source": "github"
   },
   "version": "1.6.0",

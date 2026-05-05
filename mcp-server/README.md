@@ -159,7 +159,7 @@ Full privacy policy: [nannykeeper.com/privacy](https://www.nannykeeper.com/priva
 ## Support
 
 - **Email:** hello@nannykeeper.com
-- **GitHub Issues:** [github.com/imaznation/nannykeeper/issues](https://github.com/imaznation/nannykeeper/issues)
+- **GitHub Issues:** [github.com/nannykeeper/mcp-server/issues](https://github.com/nannykeeper/mcp-server/issues)
 - **Documentation:** [nannykeeper.com/developers](https://www.nannykeeper.com/developers)
 - **MCP Setup Guide:** [nannykeeper.com/developers/mcp](https://www.nannykeeper.com/developers/mcp)
 
