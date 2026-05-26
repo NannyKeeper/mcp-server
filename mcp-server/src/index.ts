@@ -21,10 +21,11 @@ import { executeCalculate } from "./tools/calculate.js";
 import { executeThreshold } from "./tools/threshold.js";
 import { executePreviewPayroll } from "./tools/preview-payroll.js";
 import { executeRunPayroll } from "./tools/run-payroll.js";
+import { executeStateFilingStatus } from "./tools/state-filing-status.js";
 
 const server = new McpServer({
   name: "nannykeeper",
-  version: "1.3.0",
+  version: "1.7.0",
 });
 
 // Register calculate tool
@@ -201,6 +202,32 @@ server.tool(
   },
   async (args) => {
     const result = await executeRunPayroll(args);
+    return { content: [{ type: "text" as const, text: result }] };
+  }
+);
+
+// Register get_state_filing_status tool
+server.tool(
+  "get_state_filing_status",
+  "List the employer's state agency account numbers (last-four only) per " +
+    "(state, registration_type) tuple — UC, withholding, SDI. Returns the " +
+    "agency name and a registration URL for any that are missing. Use " +
+    "before generating quarterly filing instructions (e.g., 'file Form UC-2 " +
+    "for Q2 — your PA UC account is ••••5678') or when a customer asks " +
+    "whether their state setup is complete. Read-only. To update, use the " +
+    "POST /api/v1/state-registrations REST endpoint or direct the customer " +
+    "to /settings/states — LLMs shouldn't fabricate account numbers since " +
+    "they land on real tax filings.",
+  {},
+  {
+    title: "Get State Filing Status",
+    readOnlyHint: true,
+    destructiveHint: false,
+    idempotentHint: true,
+    openWorldHint: true,
+  },
+  async () => {
+    const result = await executeStateFilingStatus();
     return { content: [{ type: "text" as const, text: result }] };
   }
 );
