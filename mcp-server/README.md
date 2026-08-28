@@ -87,6 +87,19 @@ Run payroll for a household employee **end-to-end in a single call** — creates
 - `voluntary_set_aside` (optional, v1.6.0+) — Override or skip the employee's recurring voluntary set-aside rule for this paycheck only. Object with `skip` (boolean) or `amount` (number, $0–$9,999). The recurring rule is configured via the dashboard; omit this field to apply it normally.
 - `idempotency_key` (optional) — Prevent duplicate payroll creation
 
+### `get_state_filing_status`
+
+Read an employer's state agency account status with masked identifiers.
+
+### `get_autopilot`
+
+Read Autopilot status for one employee or list an employer's active enrollments.
+
+### `manage_autopilot`
+
+Pause, resume, skip, or disable an existing Autopilot enrollment. Enrollment is
+intentionally app-only because it captures standing recurring ACH authorization.
+
 ## Examples
 
 ### Example 1: Full tax calculation
@@ -113,7 +126,7 @@ Run payroll for a household employee **end-to-end in a single call** — creates
 >
 > **Claude** uses `check_threshold` with `state: "TX"`, `annual_wages: 2400`
 >
-> **Claude:** At $2,400/year, you're below the federal household employer threshold of $3,000 (for 2026). You don't need to pay Social Security or Medicare taxes, and you don't need to file Schedule H. If your babysitter's wages stay under $3,000 for the year, no action is needed.
+> **Claude:** At $2,400/year, this worker is below the 2026 Social Security and Medicare threshold of $3,000. That does not answer the separate FUTA or state unemployment tests: check whether total wages for all household employees reached $1,000 in any calendar quarter and review the state's quarterly rule before concluding no action is needed.
 
 ### Example 3: Comparing costs across states
 
@@ -135,7 +148,20 @@ Run payroll for a household employee **end-to-end in a single call** — creates
 
 ## Key Facts
 
-- **FICA threshold (2026):** $3,000/year — above this you must pay employer Social Security + Medicare
+<!--
+Authority: SSA Contribution and Benefit Base; IRS Pubs. 15 and 926 (2026).
+Fact: the 2026 Social Security wage base is $184,500; Social Security is 6.2%
+for both employer and employee; Medicare is 1.45% for each with no wage cap;
+the household-worker FICA cash-wage threshold is $3,000.
+Sources: https://www.ssa.gov/oact/COLA/cbb.html
+https://www.irs.gov/publications/p15
+https://www.irs.gov/publications/p926
+Accessed: 2026-08-25.
+Reasoning: this README is bundled into the installable MCPB, so its durable tax
+facts need provenance even though the citations stay out of the rendered list.
+-->
+
+- **FICA threshold (2026):** $3,000 per nonexempt worker — above this employer Social Security + Medicare generally apply; FUTA and state rules use separate tests
 - **Social Security:** 6.2% employer + 6.2% employee (wage base $184,500)
 - **Medicare:** 1.45% employer + 1.45% employee (no wage base)
 - **FUTA:** 0.6% on first $7,000 per employee

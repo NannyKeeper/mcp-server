@@ -1,8 +1,8 @@
 {
   "manifest_version": "0.3",
   "name": "nannykeeper",
-  "version": "1.7.0",
-  "description": "Calculate US household employer (nanny) taxes for all 50 states. Preview and run payroll, generate W-2s and pay stubs, list state agency account numbers. 5 tools: calculate, threshold, preview, run, state-filing-status.",
+  "version": "1.10.2",
+  "description": "Calculate US household employer (nanny) taxes for all 50 states. Preview and run payroll, list state agency account numbers, and manage existing Autopilot enrollments. 7 tools: calculate_nanny_taxes, check_threshold, preview_payroll, run_payroll, get_state_filing_status, get_autopilot, manage_autopilot.",
   "author": {
     "name": "nannykeeper",
     "url": "https://github.com/nannykeeper"

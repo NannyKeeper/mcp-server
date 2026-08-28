@@ -23,6 +23,7 @@ export async function executeRunPayroll(args: {
   confirm_large_payroll?: boolean;
   confirm_ach_debit?: boolean;
   voluntary_set_aside?: { skip?: boolean; amount?: number };
+  off_cycle?: boolean;
   idempotency_key?: string;
 }): Promise<string> {
   const apiKey = process.env.NANNYKEEPER_API_KEY;
@@ -73,6 +74,7 @@ export async function executeRunPayroll(args: {
         ...(args.confirm_ach_debit !== undefined
           ? { confirm_ach_debit: args.confirm_ach_debit }
           : {}),
+        ...(args.off_cycle !== undefined ? { off_cycle: args.off_cycle } : {}),
       }),
     });
 

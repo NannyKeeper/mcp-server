@@ -1,6 +1,6 @@
 {
   "name": "@nannykeeper/mcp-server",
-  "version": "1.7.0",
+  "version": "1.10.2",
   "mcpName": "com.nannykeeper.www/mcp-server",
   "description": "MCP server for calculating US household employer (nanny) taxes. All 50 states. Works with Claude, ChatGPT, and any MCP-compatible AI agent.",
   "keywords": [
@@ -44,6 +44,8 @@
     "AGENTS.md"
   ],
   "scripts": {
+    "_comment_prepublishOnly": "dist/ is gitignored, so it is refreshed only by a build in this directory. This hook runs immediately before packing, in whatever directory the publish runs from, so the compiled output always matches the source being published. Do not remove it.",
+    "prepublishOnly": "npm run build",
     "build": "tsc",
     "dev": "tsc --watch",
     "start": "node dist/index.js",

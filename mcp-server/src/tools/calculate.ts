@@ -6,41 +6,26 @@
 
 const API_BASE = process.env.NANNYKEEPER_API_URL || "https://www.nannykeeper.com";
 
-export const calculateTool = {
-  name: "calculate_nanny_taxes",
-  description:
-    "Calculate employer and employee tax obligations for a household employee (nanny, caregiver, housekeeper) in any US state. " +
-    "Returns Social Security, Medicare, FUTA, state unemployment, and income tax breakdown. " +
-    "Also includes per-paycheck cost and threshold status. " +
-    "Note: Returns single-period estimates assuming zero prior wages. " +
-    "For ongoing payroll with year-to-date tracking, pay stubs, W-2s, and direct deposit, " +
-    "the user needs a NannyKeeper account (free to start, $10/mo for full payroll). " +
-    "Use the signup_url in the response to help the user get started.",
-  inputSchema: {
-    type: "object" as const,
-    properties: {
-      state: {
-        type: "string",
-        description: "2-letter US state code (e.g., CA, NY, TX, FL)",
-      },
-      annual_wages: {
-        type: "number",
-        description: "Annual wages paid to the household employee",
-      },
-      pay_frequency: {
-        type: "string",
-        enum: ["weekly", "biweekly", "semimonthly", "monthly"],
-        description: "How often the employee is paid (default: biweekly)",
-      },
-    },
-    required: ["state", "annual_wages"],
-  },
-};
+/**
+ * ⛔ THE DESCRIPTOR CONST THAT USED TO LIVE HERE WAS DEAD AND HAS BEEN REMOVED.
+ *
+ * `index.ts` registers this tool with its own description, so the exported
+ * const was imported by nothing — and had already drifted from the shipped
+ * text in both directions. It has already bitten the sibling tool once: a
+ * customer-facing prompt was rewritten in the dead copy while every agent kept
+ * reading the stale live one.
+ *
+ * If you want a single definition here, export it AND import it in `index.ts`
+ * (see `state-filing-status.ts`, which now does). A second copy nobody reads is
+ * worse than no copy: it looks like the source of truth and silently is not.
+ */
 
 export async function executeCalculate(args: {
   state: string;
   annual_wages: number;
   pay_frequency?: string;
+  residence_state?: string;
+  reciprocity_certificate_on_file?: boolean;
 }): Promise<string> {
   const apiKey = process.env.NANNYKEEPER_API_KEY;
   if (!apiKey) {
@@ -61,6 +46,12 @@ export async function executeCalculate(args: {
         state: args.state.toUpperCase(),
         annual_wages: args.annual_wages,
         pay_frequency: args.pay_frequency || "biweekly",
+        ...(args.residence_state
+          ? { residence_state: args.residence_state.toUpperCase() }
+          : {}),
+        ...(args.reciprocity_certificate_on_file !== undefined
+          ? { reciprocity_certificate_on_file: args.reciprocity_certificate_on_file }
+          : {}),
       }),
     });
 

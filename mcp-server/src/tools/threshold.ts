@@ -1,37 +1,24 @@
 /**
  * check_threshold MCP tool
  *
- * Calls the NannyKeeper API to check if wages cross the household employer threshold.
+ * Calls the NannyKeeper API to check one worker's annual FICA threshold.
  */
 
 const API_BASE = process.env.NANNYKEEPER_API_URL || "https://www.nannykeeper.com";
 
-export const thresholdTool = {
-  name: "check_threshold",
-  description:
-    "Check if annual wages to a household employee cross the IRS threshold " +
-    "($3,000 for 2026) that triggers employer tax obligations (Social Security, Medicare, Schedule H). " +
-    "Also checks state-specific thresholds where applicable (CA $750/quarter, NY $500/quarter, DC $500/quarter). " +
-    "Use this when someone asks 'Do I need to pay nanny taxes?' or 'Am I a household employer?'",
-  inputSchema: {
-    type: "object" as const,
-    properties: {
-      state: {
-        type: "string",
-        description: "2-letter US state code (e.g., CA, NY, TX)",
-      },
-      annual_wages: {
-        type: "number",
-        description: "Annual wages paid (or planned) to the household employee",
-      },
-      tax_year: {
-        type: "number",
-        description: "Tax year to check (default: current year)",
-      },
-    },
-    required: ["state", "annual_wages"],
-  },
-};
+/**
+ * ⛔ THE DESCRIPTOR CONST THAT USED TO LIVE HERE WAS DEAD AND HAS BEEN REMOVED.
+ *
+ * `index.ts` registers this tool with its own description, so the exported
+ * const was imported by nothing — and had already drifted from the shipped
+ * text in both directions. It has already bitten the sibling tool once: a
+ * customer-facing prompt was rewritten in the dead copy while every agent kept
+ * reading the stale live one.
+ *
+ * If you want a single definition here, export it AND import it in `index.ts`
+ * (see `state-filing-status.ts`, which now does). A second copy nobody reads is
+ * worse than no copy: it looks like the source of truth and silently is not.
+ */
 
 export async function executeThreshold(args: {
   state: string;

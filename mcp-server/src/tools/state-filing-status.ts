@@ -21,24 +21,43 @@
 
 const API_BASE = process.env.NANNYKEEPER_API_URL || "https://www.nannykeeper.com";
 
+/**
+ * The single definition of this tool's name and description. `index.ts` imports
+ * it rather than restating it: an inline copy there is the one agents actually
+ * read, so edits made here would never reach a model.
+ */
 export const stateFilingStatusTool = {
   name: "get_state_filing_status",
   description:
     "List the employer's state agency account numbers (last-four only) per " +
     "(state, registration_type) tuple. Returns whether each state has a UC, " +
-    "withholding, and SDI account on file, the agency name, and a " +
-    "registration URL for any that are missing. Use before generating " +
+    "withholding, and SDI account on file, and the agency name. Each " +
+    "account has a status: registered, pending, required, or not_required. " +
+    "A registration URL is returned for status=required and status=pending — " +
+    "the accounts the employer still has to open or finish. It is null for " +
+    "status=registered and status=not_required. status=not_required means " +
+    "this household does not owe that registration (e.g. they and their " +
+    "employee agreed not to withhold state income tax), so never tell them " +
+    "to go register for it. Use before generating " +
     "quarterly filing instructions, or when a customer asks 'do I have my " +
     "state account numbers set up?' Read-only — to update, use the REST " +
     "API or direct the customer to /settings/states.",
-  inputSchema: {
-    type: "object" as const,
-    properties: {},
-    required: [],
-  },
+  // No `inputSchema` here on purpose: `index.ts` passes its own zod shape to
+  // `server.tool()`, so a declaration here would reach no agent. Declare
+  // parameters there.
 };
 
-export async function executeStateFilingStatus(): Promise<string> {
+/**
+ * The `employer_id` passthrough is required, not optional plumbing.
+ *
+ * `/api/v1/state-registrations` enforces the test/live boundary, and an API
+ * key's stored household is always the real one. A server configured with a
+ * `nk_test_` key and no way to name a household would therefore be refused on
+ * every call, with no way to reach the sandbox it is meant to work against.
+ */
+export async function executeStateFilingStatus(args?: {
+  employer_id?: string;
+}): Promise<string> {
   const apiKey = process.env.NANNYKEEPER_API_KEY;
   if (!apiKey) {
     return JSON.stringify({
@@ -48,7 +67,12 @@ export async function executeStateFilingStatus(): Promise<string> {
   }
 
   try {
-    const response = await fetch(`${API_BASE}/api/v1/state-registrations`, {
+    const url = new URL(`${API_BASE}/api/v1/state-registrations`);
+    if (args?.employer_id) {
+      url.searchParams.set("employer_id", args.employer_id);
+    }
+
+    const response = await fetch(url, {
       headers: {
         Authorization: `Bearer ${apiKey}`,
       },
@@ -88,8 +112,15 @@ export async function executeStateFilingStatus(): Promise<string> {
         agency: r.agency,
         last_four: r.account_number_last_four,
         status: r.status,
+        // ⛔ `not_required` joins `registered` here. The upstream
+        // route already nulls it, so this is belt-and-braces — but this tool
+        // is what an agent actually reads, and handing it a URL for a
+        // registration we just said is not required is how the agent ends up
+        // nagging the family about an account they do not need.
         registration_url:
-          r.status === "registered" ? null : r.registration_url,
+          r.status === "registered" || r.status === "not_required"
+            ? null
+            : r.registration_url,
       })),
     }));
 
