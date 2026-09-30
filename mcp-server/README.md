@@ -89,7 +89,7 @@ Run payroll for a household employee **end-to-end in a single call** — creates
 
 ### `get_state_filing_status`
 
-Read an employer's state agency account status with masked identifiers.
+Read an employer's state agency account status with masked identifiers. Pass the optional `employer_id` to select an owned household; test-mode keys must explicitly select a sandbox household. Omitting it uses the key's default household.
 
 ### `get_autopilot`
 
@@ -100,72 +100,17 @@ Read Autopilot status for one employee or list an employer's active enrollments.
 Pause, resume, skip, or disable an existing Autopilot enrollment. Enrollment is
 intentionally app-only because it captures standing recurring ACH authorization.
 
-## Examples
+## Example prompts
 
-### Example 1: Full tax calculation
+- “Estimate payroll costs for a nanny earning $35,000 per year in California.”
+- “Check which thresholds may apply if I pay my babysitter $200 per month in Texas.”
+- “Compare the returned estimates for $45,000 in annual wages in Texas and New York.”
 
-> **You:** How much would I owe in taxes if I pay my nanny $35,000/year in California?
->
-> **Claude** uses `calculate_nanny_taxes` with `state: "CA"`, `annual_wages: 35000`
->
-> **Claude:** Based on NannyKeeper's calculation, here's your tax breakdown for paying a nanny $35,000/year in California:
->
-> **Employer taxes (you pay):** $2,838/year
-> - Social Security (6.2%): $2,170
-> - Medicare (1.45%): $507.50
-> - FUTA (0.6%): $42
-> - CA Unemployment (SDI/ETT): $119
->
-> **Per biweekly paycheck:** Your total cost is $1,456 ($1,346 gross pay + $110 employer taxes).
->
-> The employee also pays $2,678 in their share of FICA, withheld from each paycheck.
-
-### Example 2: Threshold check
-
-> **You:** I pay my babysitter $200/month. Do I need to worry about nanny taxes?
->
-> **Claude** uses `check_threshold` with `state: "TX"`, `annual_wages: 2400`
->
-> **Claude:** At $2,400/year, this worker is below the 2026 Social Security and Medicare threshold of $3,000. That does not answer the separate FUTA or state unemployment tests: check whether total wages for all household employees reached $1,000 in any calendar quarter and review the state's quarterly rule before concluding no action is needed.
-
-### Example 3: Comparing costs across states
-
-> **You:** I'm relocating from Texas to New York. How will that change what I owe for my nanny who makes $45,000?
->
-> **Claude** uses `calculate_nanny_taxes` for both TX and NY with `annual_wages: 45000`
->
-> **Claude:** Moving from Texas to New York will increase your employer tax costs:
->
-> | | Texas | New York |
-> |---|---|---|
-> | Social Security | $2,790 | $2,790 |
-> | Medicare | $652.50 | $652.50 |
-> | FUTA | $42 | $42 |
-> | State Unemployment | $0 | $133.65 |
-> | **Total employer taxes** | **$3,485** | **$3,618** |
->
-> The difference is $133/year — New York has a state unemployment insurance (SUI) tax that Texas doesn't. Your nanny will also see New York state income tax withheld from their paychecks.
-
-## Key Facts
-
-<!--
-Authority: SSA Contribution and Benefit Base; IRS Pubs. 15 and 926 (2026).
-Fact: the 2026 Social Security wage base is $184,500; Social Security is 6.2%
-for both employer and employee; Medicare is 1.45% for each with no wage cap;
-the household-worker FICA cash-wage threshold is $3,000.
-Sources: https://www.ssa.gov/oact/COLA/cbb.html
-https://www.irs.gov/publications/p15
-https://www.irs.gov/publications/p926
-Accessed: 2026-08-25.
-Reasoning: this README is bundled into the installable MCPB, so its durable tax
-facts need provenance even though the citations stay out of the rendered list.
--->
-
-- **FICA threshold (2026):** $3,000 per nonexempt worker — above this employer Social Security + Medicare generally apply; FUTA and state rules use separate tests
-- **Social Security:** 6.2% employer + 6.2% employee (wage base $184,500)
-- **Medicare:** 1.45% employer + 1.45% employee (no wage base)
-- **FUTA:** 0.6% on first $7,000 per employee
-- **Schedule H:** Filed with your personal 1040 tax return
+Call the relevant tool and use its actual response. Preserve the returned tax
+year, assumptions, limitations, and any missing or unassessed information.
+Do not reuse a sample total or infer that one threshold result resolves every
+other obligation. If additional household details are needed, ask for them
+before presenting a complete assessment.
 
 ## Need More Than Calculations?
 
@@ -178,7 +123,9 @@ Plans start at $10/month. [Learn more](https://www.nannykeeper.com/developers/pr
 
 ## Privacy Policy
 
-This MCP server sends wage calculation requests (state, annual wages, pay frequency) to the NannyKeeper API. No personally identifiable information is collected or transmitted. API keys are used for authentication and rate limiting only.
+Tool calls send their inputs to the NannyKeeper API. Depending on the tool, these include wages, household and employee identifiers, dates, hours, payment method, and optional payroll notes. Account tools can return personal and financial information, including employee names, compensation, payroll records, masked agency-account details, and Autopilot status. The connected AI client receives those results.
+
+API keys authorize access to NannyKeeper account data and permitted actions. Keep keys private, share only information needed for the requested task, and review the connected AI client's data practices alongside NannyKeeper's policy.
 
 Full privacy policy: [nannykeeper.com/privacy](https://www.nannykeeper.com/privacy)
 

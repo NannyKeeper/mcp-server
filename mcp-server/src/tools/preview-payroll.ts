@@ -5,7 +5,7 @@
  * Returns full tax breakdown and net pay — use to validate before run_payroll.
  */
 
-const API_BASE = process.env.NANNYKEEPER_API_URL || "https://www.nannykeeper.com";
+import { getToolContext, type ToolContext } from "../context.ts";
 
 export async function executePreviewPayroll(args: {
   employer_id: string;
@@ -19,8 +19,8 @@ export async function executePreviewPayroll(args: {
   bonus?: number;
   other_earnings?: number;
   voluntary_set_aside?: { skip?: boolean; amount?: number };
-}): Promise<string> {
-  const apiKey = process.env.NANNYKEEPER_API_KEY;
+}, context?: ToolContext): Promise<string> {
+  const { apiKey, apiBase: API_BASE } = getToolContext(context);
   if (!apiKey) {
     return JSON.stringify({
       error:

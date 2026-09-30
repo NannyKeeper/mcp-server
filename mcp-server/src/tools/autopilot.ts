@@ -8,7 +8,7 @@
  * driven in the app. Requires a Plus/Professional key (the `ach` scope).
  */
 
-const API_BASE = process.env.NANNYKEEPER_API_URL || "https://www.nannykeeper.com";
+import { getToolContext, type ToolContext } from "../context.ts";
 
 function missingKey(): string {
   return JSON.stringify({
@@ -21,8 +21,8 @@ function missingKey(): string {
 export async function executeGetAutopilot(args: {
   employer_id: string;
   employee_id?: string;
-}): Promise<string> {
-  const apiKey = process.env.NANNYKEEPER_API_KEY;
+}, context?: ToolContext): Promise<string> {
+  const { apiKey, apiBase: API_BASE } = getToolContext(context);
   if (!apiKey) return missingKey();
 
   try {
@@ -49,8 +49,8 @@ export async function executeManageAutopilot(args: {
   employee_id: string;
   action: "pause" | "resume" | "skip" | "disable";
   through_date?: string;
-}): Promise<string> {
-  const apiKey = process.env.NANNYKEEPER_API_KEY;
+}, context?: ToolContext): Promise<string> {
+  const { apiKey, apiBase: API_BASE } = getToolContext(context);
   if (!apiKey) return missingKey();
 
   try {

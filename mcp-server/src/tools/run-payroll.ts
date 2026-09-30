@@ -5,7 +5,7 @@
  * Creates a payroll record with full tax calculations and YTD tracking.
  */
 
-const API_BASE = process.env.NANNYKEEPER_API_URL || "https://www.nannykeeper.com";
+import { getToolContext, type ToolContext } from "../context.ts";
 
 export async function executeRunPayroll(args: {
   employer_id: string;
@@ -25,8 +25,8 @@ export async function executeRunPayroll(args: {
   voluntary_set_aside?: { skip?: boolean; amount?: number };
   off_cycle?: boolean;
   idempotency_key?: string;
-}): Promise<string> {
-  const apiKey = process.env.NANNYKEEPER_API_KEY;
+}, context?: ToolContext): Promise<string> {
+  const { apiKey, apiBase: API_BASE } = getToolContext(context);
   if (!apiKey) {
     return JSON.stringify({
       error:
@@ -83,7 +83,7 @@ export async function executeRunPayroll(args: {
     if (!response.ok) {
       if (response.status === 429) {
         return JSON.stringify({
-          error: "Rate limit exceeded. Upgrade at nannykeeper.com/developers/pricing",
+          error: "Rate limit exceeded. Please wait before retrying.",
         });
       }
       // Include example from error response if available (LLM self-correction)

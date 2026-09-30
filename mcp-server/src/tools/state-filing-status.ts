@@ -19,10 +19,10 @@
  * confirmation context.
  */
 
-const API_BASE = process.env.NANNYKEEPER_API_URL || "https://www.nannykeeper.com";
+import { getToolContext, type ToolContext } from "../context.ts";
 
 /**
- * The single definition of this tool's name and description. `index.ts` imports
+ * The single definition of this tool's name and description. `server.ts` imports
  * it rather than restating it: an inline copy there is the one agents actually
  * read, so edits made here would never reach a model.
  */
@@ -41,8 +41,13 @@ export const stateFilingStatusTool = {
     "to go register for it. Use before generating " +
     "quarterly filing instructions, or when a customer asks 'do I have my " +
     "state account numbers set up?' Read-only — to update, use the REST " +
-    "API or direct the customer to /settings/states.",
-  // No `inputSchema` here on purpose: `index.ts` passes its own zod shape to
+    "API or direct the customer to /settings/states. The response also " +
+    "carries `obligations`: this household's FICA, FUTA and per-state " +
+    "unemployment status (started, not_started, exempt or unassessed), " +
+    "registration state, estimate, action and the agency's real due date. " +
+    "When `assessment` is incomplete or a status is unassessed, never tell " +
+    "the customer they owe nothing or are all set.",
+  // No `inputSchema` here on purpose: `server.ts` passes its own zod shape to
   // `server.tool()`, so a declaration here would reach no agent. Declare
   // parameters there.
 };
@@ -57,8 +62,8 @@ export const stateFilingStatusTool = {
  */
 export async function executeStateFilingStatus(args?: {
   employer_id?: string;
-}): Promise<string> {
-  const apiKey = process.env.NANNYKEEPER_API_KEY;
+}, context?: ToolContext): Promise<string> {
+  const { apiKey, apiBase: API_BASE } = getToolContext(context);
   if (!apiKey) {
     return JSON.stringify({
       error:

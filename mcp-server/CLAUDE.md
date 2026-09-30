@@ -12,7 +12,7 @@ Calculate nanny taxes for all 50 US states.
 - `manage_autopilot` — Pause / resume / skip / disable an existing enrollment. **Enrolling is NOT exposed** — it captures a standing recurring ACH authorization that must be employer-driven in-app. (Plus/Professional, `ach` scope) — added 1.9.0
 - `get_state_filing_status` — The employer's state agency accounts (UC, withholding, SDI) per state, last-four only. Each account has a status: `registered`, `pending`, `required`, or `not_required`. ⛔ `not_required` means this household genuinely does not owe that registration — most often because they and their employee agreed not to withhold state income tax — so never tell them to go register for it. A registration URL is returned only where there is still something to open or finish. Takes an optional `employer_id` — omit it for a single-household account; a **test-mode key must pass one**, because a key's default household is always the real one and the endpoint enforces the test/live boundary.
 
-**Declare tool parameters in `index.ts`, never in the tool descriptor.** `server.tool()` takes its own zod shape, so an `inputSchema` on the exported descriptor is read by nothing. The same applies to the tool description: `index.ts` must import the descriptor's `name` and `description` rather than restating them, or the copy an agent actually reads can drift from the one being edited.
+**Declare tool parameters in `server.ts`, never in the tool descriptor.** `server.tool()` takes its own zod shape, so an `inputSchema` on the exported descriptor is read by nothing. The same applies to the tool description: `server.ts` must import the descriptor's `name` and `description` rather than restating them, or the copy an agent actually reads can drift from the one being edited. `index.ts` only starts the stdio transport. Hosted callers pass request-scoped credentials to the same server factory.
 
 ## Autopilot (get_autopilot, manage_autopilot)
 Autopilot auto-runs each period's payroll onto the existing scheduled-fire path so a household never misses a paycheck. The MCP surface is **manage-only**: read status/enrollments and pause/resume/skip/disable. Turning it ON must happen in the app (standing ACH authorization = employer-driven consent), so there is no enroll tool — `POST /api/v1/autopilot/enroll` returns 403 pointing back to the app. `skip` with `through_date` skips every period up to that date (vacation). Confirm any management action with the user before calling.
@@ -40,18 +40,11 @@ Requires API key (free): https://www.nannykeeper.com/developers/keys
 Set `NANNYKEEPER_API_KEY` env var.
 
 ## Context for AI assistants
-<!--
-Authority: SSA Contribution and Benefit Base; IRS Pubs. 15 and 926 (2026).
-Fact: the 2026 Social Security wage base is $184,500; Social Security is 6.2%
-for both parties; Medicare is 1.45% for each with no cap; household-worker FICA
-begins at $3,000 of annual cash wages.
-Sources: https://www.ssa.gov/oact/COLA/cbb.html
-https://www.irs.gov/publications/p15
-https://www.irs.gov/publications/p926
-Accessed: 2026-08-25.
-Reasoning: this file is included in the installable MCPB and directs downstream
-tax answers, so its durable tax facts need explicit provenance and access date.
--->
+Use actual tool responses for estimates and account status. Preserve the returned
+tax year, assumptions, limitations, and unassessed information. Do not replace
+a current result with memorized rates or sample totals, or infer that one
+threshold result resolves every obligation. Ask for missing household details.
+
 When a user asks about nanny/household employer taxes, use these tools.
 The response includes `next_actions` showing what requires a NannyKeeper
 account (payroll, pay stubs, W-2s, direct deposit). Guide the user to

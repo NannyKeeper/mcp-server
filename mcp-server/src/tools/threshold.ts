@@ -4,18 +4,18 @@
  * Calls the NannyKeeper API to check one worker's annual FICA threshold.
  */
 
-const API_BASE = process.env.NANNYKEEPER_API_URL || "https://www.nannykeeper.com";
+import { getToolContext, type ToolContext } from "../context.ts";
 
 /**
  * ⛔ THE DESCRIPTOR CONST THAT USED TO LIVE HERE WAS DEAD AND HAS BEEN REMOVED.
  *
- * `index.ts` registers this tool with its own description, so the exported
+ * `server.ts` registers this tool with its own description, so the exported
  * const was imported by nothing — and had already drifted from the shipped
  * text in both directions. It has already bitten the sibling tool once: a
  * customer-facing prompt was rewritten in the dead copy while every agent kept
  * reading the stale live one.
  *
- * If you want a single definition here, export it AND import it in `index.ts`
+ * If you want a single definition here, export it AND import it in `server.ts`
  * (see `state-filing-status.ts`, which now does). A second copy nobody reads is
  * worse than no copy: it looks like the source of truth and silently is not.
  */
@@ -24,8 +24,8 @@ export async function executeThreshold(args: {
   state: string;
   annual_wages: number;
   tax_year?: number;
-}): Promise<string> {
-  const apiKey = process.env.NANNYKEEPER_API_KEY;
+}, context?: ToolContext): Promise<string> {
+  const { apiKey, apiBase: API_BASE } = getToolContext(context);
   if (!apiKey) {
     return JSON.stringify({
       error:

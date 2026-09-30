@@ -1,17 +1,35 @@
 {
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "com.nannykeeper.www/mcp-server",
+  "title": "NannyKeeper Household Payroll & Taxes",
   "description": "Calculate US household employer (nanny) taxes + run payroll via AI agents. All 50 states.",
+  "websiteUrl": "https://www.nannykeeper.com/developers/mcp",
+  "icons": [
+    {
+      "src": "https://www.nannykeeper.com/brand/nannykeeper-icon-512.png",
+      "mimeType": "image/png",
+      "sizes": [
+        "512x512"
+      ]
+    },
+    {
+      "src": "https://www.nannykeeper.com/brand/nannykeeper-icon-192.png",
+      "mimeType": "image/png",
+      "sizes": [
+        "192x192"
+      ]
+    }
+  ],
   "repository": {
     "url": "https://github.com/nannykeeper/mcp-server",
     "source": "github"
   },
-  "version": "1.10.2",
+  "version": "1.14.1",
   "packages": [
     {
       "registryType": "npm",
       "identifier": "@nannykeeper/mcp-server",
-      "version": "1.10.2",
+      "version": "1.14.1",
       "transport": {
         "type": "stdio"
       },
