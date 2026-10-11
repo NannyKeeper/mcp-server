@@ -19,14 +19,15 @@ function missingKey(): string {
 
 /** Read Autopilot status for one employee, or list the employer's active enrollments. */
 export async function executeGetAutopilot(args: {
-  employer_id: string;
+  employer_id?: string;
   employee_id?: string;
 }, context?: ToolContext): Promise<string> {
   const { apiKey, apiBase: API_BASE } = getToolContext(context);
   if (!apiKey) return missingKey();
 
   try {
-    const params = new URLSearchParams({ employer_id: args.employer_id });
+    const params = new URLSearchParams();
+    if (args.employer_id) params.set("employer_id", args.employer_id);
     if (args.employee_id) params.set("employee_id", args.employee_id);
     const response = await fetch(`${API_BASE}/api/v1/autopilot?${params.toString()}`, {
       headers: { Authorization: `Bearer ${apiKey}` },
@@ -45,7 +46,7 @@ export async function executeGetAutopilot(args: {
 
 /** Manage an existing enrollment: pause / resume / skip / disable. */
 export async function executeManageAutopilot(args: {
-  employer_id: string;
+  employer_id?: string;
   employee_id: string;
   action: "pause" | "resume" | "skip" | "disable";
   through_date?: string;

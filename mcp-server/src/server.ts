@@ -9,9 +9,28 @@ import {
   stateFilingStatusTool,
 } from "./tools/state-filing-status.ts";
 import { executeGetAutopilot, executeManageAutopilot } from "./tools/autopilot.ts";
+import {
+  executeGetPayStub,
+  executeGetPayroll,
+  executeListEmployees,
+} from "./tools/household.ts";
 
 import type { ToolContext } from "./context.ts";
 import { publicDescriptions, toolResult } from "./public-profile.ts";
+
+/**
+ * `employer_id` on every household tool (1.15.0). The API defaults it to the
+ * household the key belongs to, so a single-household caller never needs it.
+ * Do not make it required again: list_employees is the only place an agent
+ * can learn it, and a required parameter it cannot fill stops the flow.
+ */
+const EMPLOYER_ID_OPTIONAL = z
+  .string()
+  .uuid()
+  .optional()
+  .describe(
+    "Optional. Leave it out to use the household your API key belongs to. Pass it only when one account manages several households; list_employees returns it."
+  );
 
 /** A fresh server and credential closure for each hosted request. */
 export function createNannyKeeperServer(version: string, context?: ToolContext) {
@@ -40,6 +59,11 @@ server.tool(
     "pass reciprocity_certificate_on_file=true to suppress the work state's income tax (local taxes and SUI are unaffected). " +
     "Important: These are annual estimates from annual_wages, with derived per-paycheck amounts. " +
     "They do not read an existing employee's year-to-date payroll records; use preview_payroll for an existing employee. " +
+    "This tool has no family-relationship or age input, so Social Security, Medicare and FUTA are quoted as if no " +
+    "family-employee exemption (Social Security, Medicare and FUTA) or under-18 exemption (Social Security and " +
+    "Medicare only) applies, and FUTA's household quarterly test is reported as unassessed. " +
+    "threshold.action_required is true when the FICA wage test is met and null otherwise, never false: present null as " +
+    "not determined, not as nothing owed, and pass on the response's limitations. " +
     "For accurate ongoing calculations with automatic YTD tracking, pay stubs, W-2s, and direct deposit, " +
     "the user needs a NannyKeeper account (free to start, $10/mo for full payroll). Use the signup_url in the response."
   ),
@@ -83,7 +107,9 @@ server.tool(
   "Check whether one household employee's annual wages cross the IRS Social Security and Medicare threshold " +
     "($3,000 for 2026). The response discloses, but cannot assess, household-wide quarterly FUTA and state thresholds " +
     "because this tool does not receive quarterly wages for every employee. It also cannot assess family-employee exemptions " +
-    "because it has no relationship input. Never interpret the result as a complete tax-obligation decision."
+    "because it has no relationship input. federal.action_required is true when the FICA wage test is met and null " +
+    "otherwise, never false; null means not determined, not nothing owed. " +
+    "Never interpret the result as a complete tax-obligation decision."
   ),
   {
     state: z.string().describe("2-letter US state code (e.g., CA, NY, TX)"),
@@ -115,19 +141,19 @@ server.tool(
     "on the employee's profile); applied=false names the certificate still to collect. " +
     "Use this to validate your request before calling run_payroll. " +
     "Same parameters as run_payroll. Requires a Starter+ subscription. " +
-    "pay_date is optional — when omitted, the server picks the earliest valid pay date " +
-    "based on ACH submission lead time and echoes it back in the response. " +
+    "pay_date is optional. When omitted, the server picks the earliest valid business day on or " +
+    "after pay_period_end, allowing for ACH submission lead time, and echoes it back in the response. " +
     "v1.5.0: if pay_date is more than 5 business days in the future, the response includes " +
     "is_estimated=true — those numbers will be recomputed at fire time if the user schedules. " +
-    "To get your employer_id and employee_id, call the NannyKeeper API: " +
-    "GET /api/v1/employees?employer_id=YOUR_ID (employer_id is visible in your dashboard URL)."
+    "Get employee_id from list_employees. employer_id is optional: leave it out and the API uses " +
+    "the household your API key belongs to (pass it only when one account manages several households)."
   ),
   {
-    employer_id: z.string().uuid().describe("Employer UUID — visible in your NannyKeeper dashboard URL or from GET /api/v1/employees"),
-    employee_id: z.string().uuid().describe("Employee UUID — from GET /api/v1/employees response"),
+    employer_id: EMPLOYER_ID_OPTIONAL,
+    employee_id: z.string().uuid().describe("Employee UUID. Get it from list_employees."),
     pay_period_start: z.string().describe("Start of pay period in YYYY-MM-DD format (e.g., 2026-04-07)"),
     pay_period_end: z.string().describe("End of pay period in YYYY-MM-DD format (e.g., 2026-04-13)"),
-    pay_date: z.string().optional().describe("Date employee is paid (YYYY-MM-DD). Optional — server picks the earliest valid date if omitted."),
+    pay_date: z.string().optional().describe("Date employee is paid (YYYY-MM-DD), on or after pay_period_end. Optional: if omitted, the server picks the earliest valid business day on or after pay_period_end."),
     pay_frequency: z
       .enum(["weekly", "biweekly", "semimonthly", "monthly"])
       .describe("How often the employee is paid"),
@@ -171,8 +197,8 @@ server.tool(
     "Plans cap active employees per employer (Starter 1, Plus 5, Professional 5 included, expandable " +
     "to 25 at $6/mo each); if the roster exceeds the plan's count, the API returns 403 with guidance — " +
     "the user adds employees at Settings → Billing in the dashboard (never billed implicitly via API), then retry. " +
-    "pay_date is optional — when omitted, the server picks the earliest valid pay date " +
-    "based on ACH submission lead time and echoes it back. If supplied and past the " +
+    "pay_date is optional. When omitted, the server picks the earliest valid business day on or " +
+    "after pay_period_end, allowing for ACH submission lead time, and echoes it back. If supplied and past the " +
     "submission deadline, the request is rejected with next_valid_pay_date in the error. " +
     "If pay_date is more than 5 business days in the future on a DD payroll, status=scheduled " +
     "and the payroll will auto-fire at scheduled_send_at (5 biz days before pay_date). " +
@@ -181,15 +207,15 @@ server.tool(
     "Direct deposit callers: set confirm_large_payroll=true for totals >$5,000 or any single " +
     "net pay >$3,000; set confirm_ach_debit=true for first-time DD or if no DD in 30 days. " +
     "Tip: use preview_payroll first to validate your request and see results before committing. " +
-    "To get your employer_id and employee_id, call the NannyKeeper API: " +
-    "GET /api/v1/employees?employer_id=YOUR_ID (employer_id is visible in your dashboard URL)."
+    "Get employee_id from list_employees. employer_id is optional: leave it out and the API uses " +
+    "the household your API key belongs to (pass it only when one account manages several households)."
   ),
   {
-    employer_id: z.string().uuid().describe("Employer UUID — visible in your NannyKeeper dashboard URL or from GET /api/v1/employees"),
-    employee_id: z.string().uuid().describe("Employee UUID — from GET /api/v1/employees response"),
+    employer_id: EMPLOYER_ID_OPTIONAL,
+    employee_id: z.string().uuid().describe("Employee UUID. Get it from list_employees."),
     pay_period_start: z.string().describe("Start of pay period in YYYY-MM-DD format (e.g., 2026-04-07)"),
     pay_period_end: z.string().describe("End of pay period in YYYY-MM-DD format (e.g., 2026-04-13)"),
-    pay_date: z.string().optional().describe("Date employee is paid (YYYY-MM-DD). Optional — server picks the earliest valid date if omitted."),
+    pay_date: z.string().optional().describe("Date employee is paid (YYYY-MM-DD), on or after pay_period_end. Optional: if omitted, the server picks the earliest valid business day on or after pay_period_end."),
     pay_frequency: z
       .enum(["weekly", "biweekly", "semimonthly", "monthly"])
       .describe("How often the employee is paid"),
@@ -286,10 +312,10 @@ server.tool(
     "(status, standard hours, expected net, next pay date) plus eligibility and a 3-payday schedule " +
     "preview — or, if not enrolled, WHY (the eligibility reason, e.g. not_plus / insufficient_history). " +
     "Without employee_id: the list of the employer's active enrollments. Read-only. " +
-    "Requires a Plus/Professional key. To get employer_id/employee_id: GET /api/v1/employees?employer_id=YOUR_ID."
+    "Requires a Plus/Professional key. Get employee_id from list_employees; employer_id is optional."
   ),
   {
-    employer_id: z.string().uuid().describe("Employer UUID — visible in your NannyKeeper dashboard URL"),
+    employer_id: EMPLOYER_ID_OPTIONAL,
     employee_id: z
       .string()
       .uuid()
@@ -322,7 +348,7 @@ server.tool(
     "done by the employer in the app. Requires a Plus/Professional key. Confirm the action with the user before calling."
   ),
   {
-    employer_id: z.string().uuid().describe("Employer UUID"),
+    employer_id: EMPLOYER_ID_OPTIONAL,
     employee_id: z.string().uuid().describe("Employee UUID whose enrollment to manage"),
     action: z
       .enum(["pause", "resume", "skip", "disable"])
@@ -343,6 +369,90 @@ server.tool(
   async (args) => {
     const result = await executeManageAutopilot(args, context);
     return toolResult(result, context?.publicConnection);
+  }
+);
+
+// Register list_employees tool (read, 1.15.0)
+server.tool(
+  "list_employees",
+  context?.publicConnection ? publicDescriptions.list_employees : (
+  "List the household's employees and return the household's employer_id. Call this first: it is how you get " +
+    "the employee_id every payroll tool needs. Each employee shows pay type, pay rate, pay frequency, work state, " +
+    "and what is still missing for payroll (W-4, address, SSN, direct deposit). Read-only."
+  ),
+  {
+    employer_id: EMPLOYER_ID_OPTIONAL,
+  },
+  {
+    title: "List Employees",
+    readOnlyHint: true,
+    destructiveHint: false,
+    idempotentHint: true,
+    openWorldHint: true,
+  },
+  async (args) => {
+    const result = await executeListEmployees(args, context);
+    return toolResult(result, context?.publicConnection);
+  }
+);
+
+// Register get_payroll tool (read, 1.15.0)
+server.tool(
+  "get_payroll",
+  context?.publicConnection ? publicDescriptions.get_payroll : (
+  "Read payrolls. With payroll_id: that payroll's status, dates, and each employee's gross pay, every deduction " +
+    "(federal, Social Security, Medicare, state, local), net pay, and employer taxes. Without payroll_id: the " +
+    "household's payrolls, newest first, with totals. Use it to confirm what run_payroll created. Read-only."
+  ),
+  {
+    payroll_id: z.string().uuid().optional().describe("A payroll id from run_payroll. Leave it out to list payrolls."),
+    employer_id: EMPLOYER_ID_OPTIONAL,
+  },
+  {
+    title: "Get Payroll",
+    readOnlyHint: true,
+    destructiveHint: false,
+    idempotentHint: true,
+    openWorldHint: true,
+  },
+  async (args) => {
+    const result = await executeGetPayroll(args, context);
+    return toolResult(result, context?.publicConnection);
+  }
+);
+
+// Register get_pay_stub tool (read, 1.15.0)
+server.tool(
+  "get_pay_stub",
+  context?.publicConnection ? publicDescriptions.get_pay_stub : (
+  "Get the pay stub PDF for each employee on a paid payroll. Returns the same stub the family downloads in the " +
+    "dashboard, attached as a PDF file, plus a short summary. A payroll that is not paid yet answers " +
+    "payroll_not_completed; check get_payroll and ask again once it is completed. For a household other " +
+    "than the key's own, pass its employer_id."
+  ),
+  {
+    payroll_id: z.string().uuid().describe("The payroll id from run_payroll or get_payroll."),
+    employee_id: z.string().uuid().optional().describe("Optional. One employee's stub instead of everyone's on the payroll."),
+    employer_id: EMPLOYER_ID_OPTIONAL,
+  },
+  {
+    title: "Get Pay Stub",
+    // Not read-only: the first request for a stub saves it, as the dashboard's
+    // download does. Safe to repeat.
+    readOnlyHint: false,
+    destructiveHint: false,
+    idempotentHint: true,
+    openWorldHint: true,
+  },
+  async (args) => {
+    const result = await executeGetPayStub(args, context);
+    // Errors go through toolResult like every other tool, so a hosted
+    // connection gets the same scrubbing.
+    if (result.isError) {
+      const text = result.content.find((c) => c.type === "text");
+      return toolResult(text && "text" in text ? text.text : JSON.stringify({ error: "Unknown error" }), context?.publicConnection);
+    }
+    return result;
   }
 );
 

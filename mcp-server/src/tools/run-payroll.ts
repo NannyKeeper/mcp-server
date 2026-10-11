@@ -8,7 +8,7 @@
 import { getToolContext, type ToolContext } from "../context.ts";
 
 export async function executeRunPayroll(args: {
-  employer_id: string;
+  employer_id?: string;
   employee_id: string;
   pay_period_start: string;
   pay_period_end: string;

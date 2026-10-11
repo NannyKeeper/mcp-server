@@ -4,6 +4,9 @@ Official MCP server for NannyKeeper's household employer tax API.
 Calculate nanny taxes for all 50 US states.
 
 ## Tools
+- `list_employees` — The household's employer_id and every employee's id, pay setup and missing payroll items. The first call in any payroll flow (added 1.15.0)
+- `get_payroll` — One payroll by id (every deduction incl. local tax, net pay, employer taxes, status) or the household's payroll list (added 1.15.0)
+- `get_pay_stub` — Each employee's pay stub PDF for a payroll, returned as an embedded PDF resource, the dashboard's own stub (added 1.15.0)
 - `calculate_nanny_taxes` — Full federal + state tax breakdown
 - `check_threshold` — Whether wages trigger employer tax obligations
 - `preview_payroll` — Dry-run payroll calc, returns taxes/net pay without creating a record (Starter+ required)
@@ -18,7 +21,7 @@ Calculate nanny taxes for all 50 US states.
 Autopilot auto-runs each period's payroll onto the existing scheduled-fire path so a household never misses a paycheck. The MCP surface is **manage-only**: read status/enrollments and pause/resume/skip/disable. Turning it ON must happen in the app (standing ACH authorization = employer-driven consent), so there is no enroll tool — `POST /api/v1/autopilot/enroll` returns 403 pointing back to the app. `skip` with `through_date` skips every period up to that date (vacation). Confirm any management action with the user before calling.
 
 ## Pay-date handling (run_payroll, preview_payroll)
-- `pay_date` is optional. When omitted, the server picks the earliest valid pay date based on ACH submission lead time (5 business days ahead, holiday-aware) and echoes it back in the response.
+- `pay_date` is optional. When omitted, the server picks the earliest valid pay date (5 business days ahead, holiday-aware), and never one before the period end: a period still running gets the first business day on or after its end. It is echoed back in the response.
 - If `pay_date` is supplied and past the submission deadline, the API rejects with HTTP 400 and includes `next_valid_pay_date` in the error details for self-correction.
 - **v1.5.0**: If `pay_date` is more than 5 business days in the future on a DD payroll, the response status is `scheduled`. The payroll will auto-fire at `scheduled_send_at` (5 biz days before `pay_date`). The `net_pay` and tax amounts in the response are estimates — they're recomputed at fire time if YTD or rate configs changed. `is_estimated: true` is set when this happens so callers can surface that to users.
 
@@ -54,7 +57,8 @@ For payroll: use `preview_payroll` first to validate your request, then
 `run_payroll` to create the record. Error responses include an `example`
 field with the correct request format for self-correction.
 
-Get employer_id and employee_id from the API:
-`GET /api/v1/employees?employer_id=YOUR_ID` (employer_id is in the dashboard URL)
+Get employee_id (and the household's employer_id) from `list_employees`.
+`employer_id` is optional on every tool since 1.15.0: the API defaults it to the
+household the key belongs to. Pass it only when one account manages several.
 
 Full API docs: https://www.nannykeeper.com/developers/reference

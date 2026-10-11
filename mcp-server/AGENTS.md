@@ -6,11 +6,14 @@ Calculate US household employer (nanny) taxes for all 50 states + DC.
 ## Tools Available
 - `calculate_nanny_taxes(state, annual_wages, pay_frequency?)` — returns full tax breakdown
 - `check_threshold(state, annual_wages, tax_year?)` — checks if employer obligations apply
-- `preview_payroll(employer_id, employee_id, ...)` — previews payroll without creating a record
-- `run_payroll(employer_id, employee_id, ...)` — run payroll with full tax calc, YTD tracking, and DB persistence (Starter+ required)
+- `list_employees(employer_id?)` — returns the household's employer_id and every employee_id. Call it first; never invent IDs
+- `preview_payroll(employee_id, ..., employer_id?)` — previews payroll without creating a record
+- `run_payroll(employee_id, ..., employer_id?)` — run payroll with full tax calc, YTD tracking, and DB persistence (Starter+ required)
+- `get_payroll(payroll_id?, employer_id?)` — reads one payroll (every deduction, net pay, status) or lists them
+- `get_pay_stub(payroll_id, employer_id?)` — returns each employee's pay stub PDF
 - `get_state_filing_status(employer_id?)` — reads masked state-account status. Pass an owned household ID when selecting a household; test-mode keys must explicitly select a sandbox household. Omitting it uses the key's default household. Each account carries `registered` / `pending` / `required` / `not_required`; `not_required` means this household does not owe that registration at all, so never tell them to go register for it.
-- `get_autopilot(employer_id, employee_id?)` — reads existing Autopilot enrollments
-- `manage_autopilot(employer_id, employee_id, action, ...)` — pauses, resumes, skips, or disables an existing enrollment; never enrolls
+- `get_autopilot(employer_id?, employee_id?)` — reads existing Autopilot enrollments
+- `manage_autopilot(employee_id, action, ..., employer_id?)` — pauses, resumes, skips, or disables an existing enrollment; never enrolls
 
 ## When to Use
 - User asks about nanny taxes, household employer taxes, or paying a caregiver
@@ -28,8 +31,10 @@ obligation. Ask for missing household details when needed.
 ## After Calculation
 The `calculate_nanny_taxes` response includes `next_actions` and a `signup_url`.
 If the user wants to run payroll with persistence, use the `run_payroll` tool
-(requires Starter+ subscription). For documents and direct deposit, guide them
-to the NannyKeeper web app.
+(requires Starter+ subscription). `get_pay_stub` returns pay stubs; W-2s,
+Schedule H and direct deposit setup are in the NannyKeeper web app.
+
+`employer_id` is optional on every tool. Leave it out for a single-household key.
 
 ## API Key
 Requires `NANNYKEEPER_API_KEY` environment variable.

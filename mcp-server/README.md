@@ -26,7 +26,52 @@ MCP server for calculating US household employer (nanny) taxes. Works with Claud
 
 3. **Restart Claude Desktop** and ask about nanny taxes!
 
+## Quick Setup (Claude Code)
+
+Run this once in your terminal, with your own key in place of `nk_live_YOUR_KEY`:
+
+```bash
+claude mcp add nannykeeper --env NANNYKEEPER_API_KEY=nk_live_YOUR_KEY -- npx -y @nannykeeper/mcp-server
+```
+
+Start `claude` and run `/mcp` to see the NannyKeeper tools. Add `--scope user` to use it in every project.
+
+## Running payroll from an agent
+
+1. `list_employees` returns your household's `employer_id` and each employee's `employee_id`.
+2. `preview_payroll` with the period and hours. Check the figures with the person you are working for.
+3. `run_payroll` with the same inputs and an `idempotency_key`.
+4. `get_payroll` confirms the status and every deduction; `get_pay_stub` returns the stub PDF.
+
+`employer_id` is optional on every tool: leave it out and the API uses the household your key belongs to.
+
 ## Tools
+
+### `list_employees`
+
+List the household's employees and return the household's `employer_id`. Call this first to get the `employee_id` the payroll tools need. Each employee shows pay type, pay rate, pay frequency, work state, and what is still missing for payroll.
+
+**Parameters:**
+- `employer_id` (optional) — Only when one account manages several households
+
+### `get_payroll`
+
+With `payroll_id`, read one payroll: status, dates, and each employee's gross pay, every deduction (federal, Social Security, Medicare, state, local), net pay, and employer taxes. Without it, list the household's payrolls, newest first.
+
+**Parameters:**
+- `payroll_id` (optional) — A payroll ID from `run_payroll`
+- `employer_id` (optional) — Only when listing for one of several households
+
+### `get_pay_stub`
+
+The pay stub PDF for each employee on a payroll, the same stub the household downloads in the dashboard, attached as a PDF file.
+
+Only a paid payroll has stubs; anything else answers `payroll_not_completed`.
+
+**Parameters:**
+- `payroll_id` (required) — The payroll ID from `run_payroll` or `get_payroll`
+- `employee_id` (optional) — One employee's stub instead of everyone's
+- `employer_id` (optional)
 
 ### `calculate_nanny_taxes`
 
@@ -51,11 +96,11 @@ Check if annual wages cross the household employer tax threshold.
 Dry-run payroll calculation. Returns the full tax breakdown, net pay, and employer costs WITHOUT creating a payroll record. Use to validate your request before calling `run_payroll`. Requires a Starter+ subscription.
 
 **Parameters:**
-- `employer_id` (required) — Employer UUID from your NannyKeeper account
-- `employee_id` (required) — Employee UUID
+- `employer_id` (optional) — Leave it out to use the household your API key belongs to
+- `employee_id` (required) — Employee UUID from `list_employees`
 - `pay_period_start` (required) — Start of pay period (YYYY-MM-DD)
 - `pay_period_end` (required) — End of pay period (YYYY-MM-DD)
-- `pay_date` (optional) — Date employee is paid (YYYY-MM-DD). When omitted, the server picks the earliest valid pay date based on ACH submission lead time and echoes it back in the response.
+- `pay_date` (optional) — Date employee is paid (YYYY-MM-DD). When omitted, the server picks the earliest valid business day on or after the period end (allowing for ACH submission lead time) and echoes it back in the response.
 - `pay_frequency` (required) — weekly, biweekly, semimonthly, or monthly
 - `regular_hours` (optional) — Regular hours worked
 - `overtime_hours` (optional) — Overtime hours worked
@@ -70,11 +115,11 @@ Run payroll for a household employee **end-to-end in a single call** — creates
 **Scheduled payrolls (v1.5.0):** When `pay_date` is more than 5 business days in the future on a direct-deposit payroll, the response status is `scheduled`. Two additional fields come back: `scheduled_send_at` (ISO UTC timestamp — when the payroll will auto-fire) and `is_estimated: true` (the returned net pay and tax amounts will be recomputed against current YTD and rate configs at fire time, so they may shift slightly). In-window pay dates fire immediately as before.
 
 **Parameters:**
-- `employer_id` (required) — Employer UUID from your NannyKeeper account
-- `employee_id` (required) — Employee UUID to run payroll for
+- `employer_id` (optional) — Leave it out to use the household your API key belongs to
+- `employee_id` (required) — Employee UUID from `list_employees`
 - `pay_period_start` (required) — Start of pay period (YYYY-MM-DD)
 - `pay_period_end` (required) — End of pay period (YYYY-MM-DD)
-- `pay_date` (optional) — Date employee is paid (YYYY-MM-DD). When omitted, the server picks the earliest valid pay date from today + ACH submission lead time. If supplied and past the submission deadline, the request is rejected with HTTP 400 + `next_valid_pay_date` in the error details so you can retry with a valid date.
+- `pay_date` (optional) — Date employee is paid (YYYY-MM-DD). When omitted, the server picks the earliest valid business day on or after the period end, allowing for ACH submission lead time. If supplied and past the submission deadline, the request is rejected with HTTP 400 + `next_valid_pay_date` in the error details so you can retry with a valid date.
 - `pay_frequency` (required) — weekly, biweekly, semimonthly, or monthly
 - `regular_hours` (optional) — Regular hours worked
 - `overtime_hours` (optional) — Overtime hours worked
@@ -93,7 +138,7 @@ Read an employer's state agency account status with masked identifiers. Pass the
 
 ### `get_autopilot`
 
-Read Autopilot status for one employee or list an employer's active enrollments.
+Read Autopilot status for one employee or list an employer's active enrollments. `employer_id` is optional.
 
 ### `manage_autopilot`
 
