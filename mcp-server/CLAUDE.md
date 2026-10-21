@@ -7,6 +7,9 @@ Calculate nanny taxes for all 50 US states.
 - `list_employees` — The household's employer_id and every employee's id, pay setup and missing payroll items. The first call in any payroll flow (added 1.15.0)
 - `get_payroll` — One payroll by id (every deduction incl. local tax, net pay, employer taxes, status) or the household's payroll list (added 1.15.0)
 - `get_pay_stub` — Each employee's pay stub PDF for a payroll, returned as an embedded PDF resource, the dashboard's own stub (added 1.15.0)
+- `get_w2`: a 15-minute DOWNLOAD LINK (`download_url`) for one copy of an employee's W-2 for an ended tax year. ⛔ Never the PDF: a W-2 prints the full SSN and a tool result is read by the assistant's model, so the tool always asks the API for `delivery: "link"` and the person opens the link. Do not "align" it with `get_pay_stub`'s attached file. Only a W-2 the household already generated in the dashboard; never generates one (`w2_not_generated`). Hosted and npm identical (added 1.16.0)
+- `get_schedule_h`: a 15-minute download link for the household's Schedule H for an ended tax year, through the dashboard's own Download procedure; its refusals come back as `schedule_h_unavailable` with a `reason`. A link for the same reason as `get_w2` (added 1.16.0)
+- `get_quarter_taxes`: a quarter's tax figures as the Taxes page shows them, from `GET /api/v1/taxes/quarterly`, passed through unchanged. ⛔ Never summarise it in the tool: a null amount is NannyKeeper refusing to state a figure (`waiting_on`), and a summary is where a null becomes a 0 (added 1.17.0)
 - `calculate_nanny_taxes` — Full federal + state tax breakdown
 - `check_threshold` — Whether wages trigger employer tax obligations
 - `preview_payroll` — Dry-run payroll calc, returns taxes/net pay without creating a record (Starter+ required)

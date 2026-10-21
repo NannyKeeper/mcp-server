@@ -73,6 +73,41 @@ Only a paid payroll has stubs; anything else answers `payroll_not_completed`.
 - `employee_id` (optional) — One employee's stub instead of everyone's
 - `employer_id` (optional)
 
+### `get_w2`
+
+A download link for one copy of an employee's W-2, for a tax year that has ended. It is the same W-2 the household downloads in the dashboard.
+
+The tool returns `download_url`, a link on nannykeeper.com that works for 15 minutes. The assistant gives the link to the person, who opens it in their browser. The PDF itself is never a tool result: a W-2 shows the employee's full Social Security number, so it goes from NannyKeeper to the person and not through the assistant.
+
+The household generates the W-2 in the dashboard first (Taxes, then W-2s). Until then the answer is `w2_not_generated`; this tool never generates one.
+
+**Parameters:**
+- `employee_id` (required): from `list_employees`
+- `tax_year` (required): a tax year that has ended
+- `copy` (optional): `A`, `B`, `C`, `D`, `1` or `2`. Defaults to `B`
+- `employer_id` (optional)
+
+### `get_schedule_h`
+
+A download link for the household's Schedule H, for a tax year that has ended. It is the same form the household downloads in the dashboard. Like `get_w2`, it returns `download_url`, a link that works for 15 minutes, and never the PDF.
+
+When the dashboard would not produce the form, the answer is `schedule_h_unavailable` with a `reason`: `year_not_ended`, `no_household_data`, `prior_wage_overlap`, `prior_wage_withholding_unknown` or `futa_prior_year_unanswered`. NannyKeeper does not file the form.
+
+**Parameters:**
+- `tax_year` (required): a tax year that has ended
+- `employer_id` (optional)
+
+### `get_quarter_taxes`
+
+A quarter's tax figures as the household's Taxes page shows them: `items`, the checklist of what to pay or file, to whom and by when; `federal`, the optional estimated payment (Form 1040-ES) for the IRS installment in `installment_period`, which settles on Schedule H with Form 1040, and the calendar quarter's federal amounts as the Taxes page shows them (Social Security and Medicare stay 0 until an employee crosses the FICA threshold); `state_destinations`, each state agency's due date, status and `amount_owed`; and `state_lines`, wages and each state and local line per state. Amounts are dollars.
+
+A null amount means NannyKeeper will not stand behind a figure yet, and `waiting_on` says why (`unemployment_rate`, `state_figures` or `payment_review`). Never report it as $0. NannyKeeper does not file or pay for the household.
+
+**Parameters:**
+- `year` (required): the tax year, for example 2026
+- `quarter` (required): 1 to 4
+- `employer_id` (optional)
+
 ### `calculate_nanny_taxes`
 
 Calculate employer and employee tax obligations for a household employee.

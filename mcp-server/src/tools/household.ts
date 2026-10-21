@@ -1,5 +1,6 @@
 /**
- * Household read tools: list_employees, get_payroll, get_pay_stub (1.15.0).
+ * Household read tools: list_employees, get_payroll, get_pay_stub (1.15.0),
+ * get_w2 and get_schedule_h (1.16.0).
  *
  * list_employees is how an agent learns the employee_id every payroll tool
  * needs (and the household's employer_id). Without it, an agent with a
@@ -33,6 +34,10 @@ async function getJson(
         ok: false,
         text: JSON.stringify({
           error: data.error?.message || `API error: ${response.status}`,
+          // The stable name of the refusal (payroll_not_completed,
+          // w2_not_generated, schedule_h_unavailable), which the tool
+          // descriptions tell an agent to look for.
+          code: data.error?.code,
           details: data.error?.details,
         }),
       };
@@ -144,4 +149,93 @@ export async function executeGetPayStub(
     });
   }
   return { content };
+}
+
+/**
+ * One tax form, as a DOWNLOAD LINK and never as the PDF (1.16.0).
+ *
+ * ⛔ A W-2 prints the employee's full Social Security number, and a tool
+ * result is read by the assistant's model. So these tools always ask the API
+ * for `delivery: "link"`: the result is a link on nannykeeper.com that works
+ * for 15 minutes, and the person opens it in their own browser. The pay stub
+ * is attached as a file because it shows only the last four digits; do not
+ * "align" these two with it.
+ */
+async function getTaxFormLink(
+  path: string,
+  body: Record<string, unknown>,
+  context?: ToolContext,
+): Promise<string> {
+  const result = await getJson(
+    path,
+    { method: "POST", body: JSON.stringify({ ...body, delivery: "link" }) },
+    context,
+  );
+  if (!result.ok) return result.text;
+  const data = (result.data as {
+    data?: {
+      download?: { url?: string; expires_at?: string; file_name?: string };
+      // Never forwarded, even if a server answered with one.
+      document?: unknown;
+    } & Record<string, unknown>;
+  }).data;
+  const { download, document: _document, ...rest } = data ?? {};
+  if (!download?.url) {
+    return JSON.stringify({ error: "NannyKeeper did not return a download link. Ask again in a minute." });
+  }
+  return JSON.stringify({
+    ...rest,
+    file_name: download.file_name,
+    download_url: download.url,
+    expires_at: download.expires_at,
+    instructions:
+      "Give the user this link and tell them to open it in their browser to download the PDF. " +
+      "It works for 15 minutes. Do not open or fetch the link yourself.",
+  });
+}
+
+export async function executeGetW2(
+  args: { employee_id: string; tax_year: number; copy?: string; employer_id?: string },
+  context?: ToolContext,
+): Promise<string> {
+  return getTaxFormLink(
+    "/api/v1/documents/w2",
+    {
+      employee_id: args.employee_id,
+      tax_year: args.tax_year,
+      ...(args.copy ? { copy: args.copy } : {}),
+      ...(args.employer_id ? { employer_id: args.employer_id } : {}),
+    },
+    context,
+  );
+}
+
+export async function executeGetScheduleH(
+  args: { tax_year: number; employer_id?: string },
+  context?: ToolContext,
+): Promise<string> {
+  return getTaxFormLink(
+    "/api/v1/documents/schedule-h",
+    {
+      tax_year: args.tax_year,
+      ...(args.employer_id ? { employer_id: args.employer_id } : {}),
+    },
+    context,
+  );
+}
+
+/**
+ * get_quarter_taxes (1.17.0): a quarter's tax figures as the Taxes quarter
+ * page shows them. Passed through unchanged: the API already says
+ * null where it will not stand behind a figure, and a tool that summarised it
+ * could turn that null into a 0.
+ */
+export async function executeGetQuarterTaxes(
+  args: { year: number; quarter: number; employer_id?: string },
+  context?: ToolContext,
+): Promise<string> {
+  const params = new URLSearchParams({ year: String(args.year), quarter: String(args.quarter) });
+  if (args.employer_id) params.set("employer_id", args.employer_id);
+  const result = await getJson(`/api/v1/taxes/quarterly?${params.toString()}`, { method: "GET" }, context);
+  return result.ok ? JSON.stringify(result.data) : result.text;
 }

@@ -11,6 +11,9 @@ import {
 import { executeGetAutopilot, executeManageAutopilot } from "./tools/autopilot.ts";
 import {
   executeGetPayStub,
+  executeGetW2,
+  executeGetScheduleH,
+  executeGetQuarterTaxes,
   executeGetPayroll,
   executeListEmployees,
 } from "./tools/household.ts";
@@ -32,9 +35,19 @@ const EMPLOYER_ID_OPTIONAL = z
     "Optional. Leave it out to use the household your API key belongs to. Pass it only when one account manages several households; list_employees returns it."
   );
 
+/**
+ * Cap on array elements plus object members in one tools/call `arguments`
+ * (GHSA-46jr-4wx8-v453). The SDK counts them before validation and
+ * has no limit unless one is set, so an object with tens of thousands of keys
+ * inside the 64KB body cap could exhaust memory. No tool takes an array or a
+ * record, and the widest (run_payroll) has about 22 members, so 256 refuses
+ * nothing real. Raise it if a tool ever gains an array input.
+ */
+export const MAX_TOOL_INPUT_ELEMENTS = 256;
+
 /** A fresh server and credential closure for each hosted request. */
 export function createNannyKeeperServer(version: string, context?: ToolContext) {
-const server = new McpServer({ name: "nannykeeper", version });
+const server = new McpServer({ name: "nannykeeper", version }, { maxToolInputElements: MAX_TOOL_INPUT_ELEMENTS });
 
 /**
  * Authority: SSA Contribution and Benefit Base; IRS Pubs. 15 and 926 (2026).
@@ -454,6 +467,98 @@ server.tool(
     }
     return result;
   }
+);
+
+// ⛔ get_w2 and get_schedule_h return a download LINK, never the PDF, on the
+// hosted connector and the npm package alike. A
+// W-2 prints the employee's full Social Security number and a tool result is
+// read by the assistant's model, so the form goes from NannyKeeper to the
+// person's browser and the assistant only passes the link along.
+
+// Register get_w2 tool (1.16.0)
+server.tool(
+  "get_w2",
+  context?.publicConnection ? publicDescriptions.get_w2 : (
+  "Get a download link for one copy of an employee's W-2, for a tax year that has ended. Returns download_url, " +
+    "a link on nannykeeper.com that works for 15 minutes: give it to the user and tell them to open it in their " +
+    "browser to download the PDF. This tool never returns the PDF itself, and you must not open the link " +
+    "yourself. The family generates the W-2 in the dashboard first (Taxes, then W-2s); until then this answers " +
+    "w2_not_generated with a link to that page, and this tool never generates one. " +
+    "For a household other than the key's own, pass its employer_id."
+  ),
+  {
+    employee_id: z.string().uuid().describe("The employee id from list_employees."),
+    tax_year: z.number().int().describe("A tax year that has ended, for example 2025."),
+    copy: z.enum(["A", "B", "C", "D", "1", "2"]).optional().describe("Optional. Which copy of the W-2. Defaults to B. Each PDF says on its face who that copy is for."),
+    employer_id: EMPLOYER_ID_OPTIONAL,
+  },
+  {
+    title: "Get W-2 Download Link",
+    // Not read-only: making a link writes an audit row. Safe to repeat.
+    readOnlyHint: false,
+    destructiveHint: false,
+    idempotentHint: true,
+    openWorldHint: true,
+  },
+  async (args) => toolResult(await executeGetW2(args, context), context?.publicConnection)
+);
+
+// Register get_schedule_h tool (1.16.0)
+server.tool(
+  "get_schedule_h",
+  context?.publicConnection ? publicDescriptions.get_schedule_h : (
+  "Get a download link for the household's Schedule H, for a tax year that has ended. Returns download_url, a " +
+    "link on nannykeeper.com that works for 15 minutes: give it to the user and tell them to open it in their " +
+    "browser to download the PDF. This tool never returns the PDF itself, and you must not open the link " +
+    "yourself. When the dashboard would not produce the form this answers schedule_h_unavailable with a reason " +
+    "(for example year_not_ended, or a question the family still has to answer in the dashboard); report that " +
+    "reason faithfully. NannyKeeper does not file the form. " +
+    "For a household other than the key's own, pass its employer_id."
+  ),
+  {
+    tax_year: z.number().int().describe("A tax year that has ended, for example 2025."),
+    employer_id: EMPLOYER_ID_OPTIONAL,
+  },
+  {
+    title: "Get Schedule H Download Link",
+    // Not read-only: making a link writes an audit row. Safe to repeat.
+    readOnlyHint: false,
+    destructiveHint: false,
+    idempotentHint: true,
+    openWorldHint: true,
+  },
+  async (args) => toolResult(await executeGetScheduleH(args, context), context?.publicConnection)
+);
+
+// Register get_quarter_taxes tool (read, 1.17.0)
+server.tool(
+  "get_quarter_taxes",
+  context?.publicConnection ? publicDescriptions.get_quarter_taxes : (
+  "Get a quarter's tax figures as the household's Taxes page shows them: `items` is the checklist of what to " +
+    "pay or file, to whom and by when (an item of kind `rec` has no hard deadline this quarter but may still be " +
+    "owed); `federal` is the optional estimated payment (Form 1040-ES) for the IRS installment in " +
+    "`installment_period`, which settles on Schedule H with Form 1040; `state_destinations` is each state " +
+    "agency with its due date and what is owed; `state_lines` is " +
+    "wages and each state and local line. Amounts are dollars. A null amount means NannyKeeper will not stand " +
+    "behind a figure yet: say so and give the reason (`waiting_on`, `fica`, `rate_needed`), and never report it " +
+    "as $0 or as nothing owed. NannyKeeper does not file or pay for the household. " +
+    "For a household other than the key's own, pass its employer_id."
+  ),
+  {
+    year: z.number().int().min(2020).max(2100).describe("The tax year, for example 2026."),
+    quarter: z.number().int().min(1).max(4).describe("The calendar quarter, 1 to 4."),
+    employer_id: EMPLOYER_ID_OPTIONAL,
+  },
+  {
+    title: "Get Quarter Taxes",
+    // Not strictly read-only: like opening the Taxes page, it refreshes the
+    // quarter's stored totals. It never changes a payroll. Safe to repeat.
+    readOnlyHint: false,
+    destructiveHint: false,
+    idempotentHint: true,
+    openWorldHint: true,
+  },
+  async (args) => toolResult(await executeGetQuarterTaxes(args, context), context?.publicConnection)
 );
 
 return server;

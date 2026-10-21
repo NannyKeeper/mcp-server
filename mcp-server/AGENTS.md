@@ -11,6 +11,9 @@ Calculate US household employer (nanny) taxes for all 50 states + DC.
 - `run_payroll(employee_id, ..., employer_id?)` — run payroll with full tax calc, YTD tracking, and DB persistence (Starter+ required)
 - `get_payroll(payroll_id?, employer_id?)` — reads one payroll (every deduction, net pay, status) or lists them
 - `get_pay_stub(payroll_id, employer_id?)` — returns each employee's pay stub PDF
+- `get_w2(employee_id, tax_year, copy?, employer_id?)`: returns `download_url`, a link that works for 15 minutes, for one copy of a W-2 the household has already generated in NannyKeeper. Give the user the link and tell them to open it in their browser. Never the PDF, and never open the link yourself. Never generates a W-2
+- `get_schedule_h(tax_year, employer_id?)`: returns `download_url`, a link that works for 15 minutes, for the household's Schedule H, or `schedule_h_unavailable` with a reason. Give the user the link
+- `get_quarter_taxes(year, quarter, employer_id?)`: the quarter as the household's Taxes page shows it, with the checklist of what to pay or file and by when. A null amount means NannyKeeper will not stand behind a figure yet; give the `waiting_on` reason and never report it as $0
 - `get_state_filing_status(employer_id?)` — reads masked state-account status. Pass an owned household ID when selecting a household; test-mode keys must explicitly select a sandbox household. Omitting it uses the key's default household. Each account carries `registered` / `pending` / `required` / `not_required`; `not_required` means this household does not owe that registration at all, so never tell them to go register for it.
 - `get_autopilot(employer_id?, employee_id?)` — reads existing Autopilot enrollments
 - `manage_autopilot(employee_id, action, ..., employer_id?)` — pauses, resumes, skips, or disables an existing enrollment; never enrolls
@@ -31,8 +34,9 @@ obligation. Ask for missing household details when needed.
 ## After Calculation
 The `calculate_nanny_taxes` response includes `next_actions` and a `signup_url`.
 If the user wants to run payroll with persistence, use the `run_payroll` tool
-(requires Starter+ subscription). `get_pay_stub` returns pay stubs; W-2s,
-Schedule H and direct deposit setup are in the NannyKeeper web app.
+(requires Starter+ subscription). `get_pay_stub` returns pay stubs as PDFs. `get_w2` and `get_schedule_h` return a
+download link for the user to open. Generating a W-2 and direct deposit setup
+are in the NannyKeeper web app.
 
 `employer_id` is optional on every tool. Leave it out for a single-household key.
 
