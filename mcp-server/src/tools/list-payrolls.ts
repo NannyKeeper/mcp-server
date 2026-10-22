@@ -12,6 +12,7 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { CLIENT_HEADER, getToolContext, type ToolContext } from "../context.ts";
+import { EMPLOYER_ID_OPTIONAL } from "../params.ts";
 import { toolResult } from "../public-profile.ts";
 
 export const LIST_PAYROLLS_DESCRIPTION =
@@ -98,13 +99,7 @@ export function registerListPayrolls(server: McpServer, context?: ToolContext) {
       pay_date_to: DATE.optional().describe("Optional. Latest pay date to include, YYYY-MM-DD."),
       limit: z.number().int().min(1).max(100).optional().describe("Optional. How many payrolls to return, 1 to 100 (default 25)."),
       cursor: z.string().max(200).optional().describe("Optional. The next_cursor from a previous call, for the next page."),
-      employer_id: z
-        .string()
-        .uuid()
-        .optional()
-        .describe(
-          "Optional. Leave it out to use the household your API key belongs to. Pass it only when one account manages several households; list_employees returns it."
-        ),
+      employer_id: EMPLOYER_ID_OPTIONAL,
     },
     {
       title: "List Payrolls",

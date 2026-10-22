@@ -120,6 +120,35 @@ A null amount means NannyKeeper will not stand behind a figure yet, and `waiting
 - `quarter` (required): 1 to 4
 - `employer_id` (optional)
 
+### `record_tax_payment`
+
+Record that the household paid a quarter's tax to the IRS or a state agency, as the Taxes page's "I've paid this" does; once the payment covers what is owed, NannyKeeper stops reminding them about it. NannyKeeper never sends the payment: call it only after the household has paid (added 1.19.0). Read the quarter with `get_quarter_taxes` first.
+
+Send exactly one figure. `expected_amount` means they paid what NannyKeeper showed (`federal.due_now`, or the destination's `amount_owed`), and it must still be the current figure: if a payroll changed it, the answer is `figures_changed` with `current_amount`, and nothing is recorded. `amount` is what they actually paid; for a state agency it is an installment unless it covers what is owed or you also send `closes_filing: true` (the agency billed that amount and it settles the filing). `already_recorded: true` means nothing new was written, and `already_recorded_different` means a different payment is already on file. The tool only adds a payment; corrections are made on the Taxes page.
+
+**Parameters:**
+- `year` (required): the tax year, for example 2026
+- `quarter` (required): 1 to 4
+- `destination` (required): `federal`, or a `state_destinations` id from `get_quarter_taxes`
+- `expected_amount` or `amount` (exactly one)
+- `idempotency_key` (required): a new unique key per payment; reuse it only to retry that payment
+- `payment_date` (optional): YYYY-MM-DD, defaults to today in US Eastern time
+- `closes_filing` (optional, with `amount`, state agencies only)
+- `payment_method`, `confirmation_number`, `notes` (optional)
+- `employer_id` (optional)
+
+### `void_payroll`
+
+Void a payroll that has not moved any money: a draft, or a scheduled direct deposit whose bank debit has not started. Two calls, never one. The first, with `payroll_id` only, voids nothing and returns the payroll (employees, pay period, gross, pay date) and a `confirmation_code` that works for 10 minutes for that payroll and key. Show the user the payroll and get their confirmation, then call again with the code and a `reason`.
+
+A payroll with money already on the move, or a completed one, is refused with `payroll_not_voidable_via_api` and an `app_url`: the user voids it in the NannyKeeper app. A payroll whose debit started between the two calls is refused the same way at the second call. A refused code (`confirmation_expired`, `confirmation_invalid`, `payroll_changed`) voids nothing; start again from the first call.
+
+**Parameters:**
+- `payroll_id` (required)
+- `confirmation_code` (optional): left out on the first call
+- `reason` (required with the code)
+- `employer_id` (optional)
+
 ### `calculate_nanny_taxes`
 
 Calculate employer and employee tax obligations for a household employee.

@@ -11,6 +11,8 @@ import {
 import { executeGetAutopilot, executeManageAutopilot } from "./tools/autopilot.ts";
 import { reimbursementsParam } from "./tools/reimbursements.ts";
 import { registerListPayrolls } from "./tools/list-payrolls.ts";
+import { registerVoidPayroll } from "./tools/void-payroll.ts";
+import { EMPLOYER_ID_OPTIONAL } from "./params.ts";
 import {
   executeGetPayStub,
   executeGetW2,
@@ -22,20 +24,8 @@ import {
 
 import type { ToolContext } from "./context.ts";
 import { publicDescriptions, toolResult } from "./public-profile.ts";
+import { registerRecordTaxPayment } from "./tools/tax-payment.ts";
 
-/**
- * `employer_id` on every household tool (1.15.0). The API defaults it to the
- * household the key belongs to, so a single-household caller never needs it.
- * Do not make it required again: list_employees is the only place an agent
- * can learn it, and a required parameter it cannot fill stops the flow.
- */
-const EMPLOYER_ID_OPTIONAL = z
-  .string()
-  .uuid()
-  .optional()
-  .describe(
-    "Optional. Leave it out to use the household your API key belongs to. Pass it only when one account manages several households; list_employees returns it."
-  );
 
 /**
  * Cap on array elements plus object members in one tools/call `arguments`
@@ -574,6 +564,11 @@ server.tool(
   },
   async (args) => toolResult(await executeGetQuarterTaxes(args, context), context?.publicConnection)
 );
+
+// record_tax_payment (write), registered from its own module.
+registerRecordTaxPayment(server, context, EMPLOYER_ID_OPTIONAL);
+
+registerVoidPayroll(server, context);
 
 return server;
 }
