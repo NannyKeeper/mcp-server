@@ -8,7 +8,7 @@
  * driven in the app. Requires a Plus/Professional key (the `ach` scope).
  */
 
-import { getToolContext, type ToolContext } from "../context.ts";
+import { CLIENT_HEADER, getToolContext, type ToolContext } from "../context.ts";
 
 function missingKey(): string {
   return JSON.stringify({
@@ -30,7 +30,7 @@ export async function executeGetAutopilot(args: {
     if (args.employer_id) params.set("employer_id", args.employer_id);
     if (args.employee_id) params.set("employee_id", args.employee_id);
     const response = await fetch(`${API_BASE}/api/v1/autopilot?${params.toString()}`, {
-      headers: { Authorization: `Bearer ${apiKey}` },
+      headers: { Authorization: `Bearer ${apiKey}`, ...CLIENT_HEADER },
     });
     const data = await response.json();
     if (!response.ok) {
@@ -66,6 +66,7 @@ export async function executeManageAutopilot(args: {
       method: "POST",
       headers: {
         Authorization: `Bearer ${apiKey}`,
+        ...CLIENT_HEADER,
         "Content-Type": "application/json",
       },
       body: JSON.stringify(body),

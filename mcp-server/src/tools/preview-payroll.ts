@@ -5,7 +5,8 @@
  * Returns full tax breakdown and net pay — use to validate before run_payroll.
  */
 
-import { getToolContext, type ToolContext } from "../context.ts";
+import { CLIENT_HEADER, getToolContext, type ToolContext } from "../context.ts";
+import type { ReimbursementLine } from "./reimbursements.ts";
 
 export async function executePreviewPayroll(args: {
   employer_id?: string;
@@ -19,6 +20,7 @@ export async function executePreviewPayroll(args: {
   bonus?: number;
   other_earnings?: number;
   voluntary_set_aside?: { skip?: boolean; amount?: number };
+  reimbursements?: ReimbursementLine[];
 }, context?: ToolContext): Promise<string> {
   const { apiKey, apiBase: API_BASE } = getToolContext(context);
   if (!apiKey) {
@@ -33,6 +35,7 @@ export async function executePreviewPayroll(args: {
       method: "POST",
       headers: {
         Authorization: `Bearer ${apiKey}`,
+        ...CLIENT_HEADER,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
@@ -51,6 +54,10 @@ export async function executePreviewPayroll(args: {
             other_earnings: args.other_earnings,
             ...(args.voluntary_set_aside
               ? { voluntary_set_aside: args.voluntary_set_aside }
+              : {}),
+            // Sent unchanged: same field names and limits as the API.
+            ...(args.reimbursements?.length
+              ? { reimbursements: args.reimbursements }
               : {}),
           },
         ],

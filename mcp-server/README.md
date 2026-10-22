@@ -15,7 +15,7 @@ MCP server for calculating US household employer (nanny) taxes. Works with Claud
   "mcpServers": {
     "nannykeeper": {
       "command": "npx",
-      "args": ["@nannykeeper/mcp-server"],
+      "args": ["-y", "@nannykeeper/mcp-server@latest"],
       "env": {
         "NANNYKEEPER_API_KEY": "nk_live_YOUR_KEY"
       }
@@ -31,7 +31,7 @@ MCP server for calculating US household employer (nanny) taxes. Works with Claud
 Run this once in your terminal, with your own key in place of `nk_live_YOUR_KEY`:
 
 ```bash
-claude mcp add nannykeeper --env NANNYKEEPER_API_KEY=nk_live_YOUR_KEY -- npx -y @nannykeeper/mcp-server
+claude mcp add nannykeeper --env NANNYKEEPER_API_KEY=nk_live_YOUR_KEY -- npx -y @nannykeeper/mcp-server@latest
 ```
 
 Start `claude` and run `/mcp` to see the NannyKeeper tools. Add `--scope user` to use it in every project.
@@ -39,9 +39,10 @@ Start `claude` and run `/mcp` to see the NannyKeeper tools. Add `--scope user` t
 ## Running payroll from an agent
 
 1. `list_employees` returns your household's `employer_id` and each employee's `employee_id`.
-2. `preview_payroll` with the period and hours. Check the figures with the person you are working for.
+2. `preview_payroll` with the period, hours and any mileage (`reimbursements`). Check the figures with the person you are working for.
 3. `run_payroll` with the same inputs and an `idempotency_key`.
 4. `get_payroll` confirms the status and every deduction; `get_pay_stub` returns the stub PDF.
+5. `list_payrolls` answers "what did I pay her last time?" and "show my last three payrolls", filtered by employee and pay date.
 
 `employer_id` is optional on every tool: leave it out and the API uses the household your key belongs to.
 
@@ -61,6 +62,17 @@ With `payroll_id`, read one payroll: status, dates, and each employee's gross pa
 **Parameters:**
 - `payroll_id` (optional) — A payroll ID from `run_payroll`
 - `employer_id` (optional) — Only when listing for one of several households
+
+### `list_payrolls`
+
+The household's payrolls, newest first, each with status, pay period, pay date, totals and the `employee_ids` it paid. Totals are for the whole payroll; `get_payroll` has each employee's figures. Read-only (added 1.18.0).
+
+**Parameters:**
+- `employee_id` (optional) — Only payrolls that paid this employee. One not in the household answers `not_found`
+- `pay_date_from`, `pay_date_to` (optional) — Inclusive pay-date range (YYYY-MM-DD)
+- `limit` (optional) — 1–100, default 25. Use 3 for "the last three payrolls"
+- `cursor` (optional) — The `next_cursor` from the previous call
+- `employer_id` (optional) — Only when one account manages several households
 
 ### `get_pay_stub`
 
@@ -142,6 +154,7 @@ Dry-run payroll calculation. Returns the full tax breakdown, net pay, and employ
 - `bonus` (optional) — Bonus amount
 - `other_earnings` (optional) — Other earnings
 - `voluntary_set_aside` (optional, v1.6.0+) — Override or skip the employee's recurring voluntary set-aside rule for this paycheck only. Object with `skip` (boolean) or `amount` (number, $0–$9,999). The recurring rule is configured via the dashboard; omit this field to apply it normally.
+- `reimbursements` (optional, v1.18.0+) — Up to 10 reimbursement lines paid with this paycheck, which NannyKeeper adds to net pay without calculating tax on them, the same lines the API takes: `{ type, amount, description?, miles?, rate_per_mile? }`. `type` is `transit`, `parking`, `mileage` or `other`; `amount` $0–$9,999; `miles` 0–9,999; `rate_per_mile` $0–$5. For mileage send the miles and `amount: 0`: NannyKeeper prices the miles at the IRS rate it holds for the pay period and pay date unless you pass `rate_per_mile`, and refuses a year it holds no rate for with `mileage_rate_unavailable`.
 
 ### `run_payroll`
 
@@ -165,6 +178,7 @@ Run payroll for a household employee **end-to-end in a single call** — creates
 - `confirm_large_payroll` (optional) — Required for direct-deposit payrolls with total net pay >$5,000 or any single net pay >$3,000
 - `confirm_ach_debit` (optional) — Required for first-ever DD payroll or when >30 days have elapsed since the last DD authorization
 - `voluntary_set_aside` (optional, v1.6.0+) — Override or skip the employee's recurring voluntary set-aside rule for this paycheck only. Object with `skip` (boolean) or `amount` (number, $0–$9,999). The recurring rule is configured via the dashboard; omit this field to apply it normally.
+- `reimbursements` (optional, v1.18.0+) — Up to 10 reimbursement lines paid with this paycheck, which NannyKeeper adds to net pay without calculating tax on them, the same lines the API takes: `{ type, amount, description?, miles?, rate_per_mile? }`. `type` is `transit`, `parking`, `mileage` or `other`; `amount` $0–$9,999; `miles` 0–9,999; `rate_per_mile` $0–$5. For mileage send the miles and `amount: 0`: NannyKeeper prices the miles at the IRS rate it holds for the pay period and pay date unless you pass `rate_per_mile`, and refuses a year it holds no rate for with `mileage_rate_unavailable`.
 - `idempotency_key` (optional) — Prevent duplicate payroll creation
 
 ### `get_state_filing_status`

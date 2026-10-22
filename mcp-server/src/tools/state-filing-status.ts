@@ -19,7 +19,7 @@
  * confirmation context.
  */
 
-import { getToolContext, type ToolContext } from "../context.ts";
+import { CLIENT_HEADER, getToolContext, type ToolContext } from "../context.ts";
 
 /**
  * The single definition of this tool's name and description. `server.ts` imports
@@ -80,6 +80,7 @@ export async function executeStateFilingStatus(args?: {
     const response = await fetch(url, {
       headers: {
         Authorization: `Bearer ${apiKey}`,
+        ...CLIENT_HEADER,
       },
     });
 

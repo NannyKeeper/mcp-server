@@ -7,9 +7,10 @@ Calculate US household employer (nanny) taxes for all 50 states + DC.
 - `calculate_nanny_taxes(state, annual_wages, pay_frequency?)` — returns full tax breakdown
 - `check_threshold(state, annual_wages, tax_year?)` — checks if employer obligations apply
 - `list_employees(employer_id?)` — returns the household's employer_id and every employee_id. Call it first; never invent IDs
-- `preview_payroll(employee_id, ..., employer_id?)` — previews payroll without creating a record
-- `run_payroll(employee_id, ..., employer_id?)` — run payroll with full tax calc, YTD tracking, and DB persistence (Starter+ required)
+- `preview_payroll(employee_id, ..., reimbursements?, employer_id?)` — previews payroll without creating a record. Mileage goes in `reimbursements` as `{type: "mileage", miles, amount: 0}`
+- `run_payroll(employee_id, ..., reimbursements?, employer_id?)` — run payroll with full tax calc, YTD tracking, and DB persistence (Starter+ required)
 - `get_payroll(payroll_id?, employer_id?)` — reads one payroll (every deduction, net pay, status) or lists them
+- `list_payrolls(employee_id?, pay_date_from?, pay_date_to?, limit?, cursor?, employer_id?)` — the household's payrolls, newest first, with the employee_ids each paid; filter by employee and pay date. Use `limit: 3` for the last three
 - `get_pay_stub(payroll_id, employer_id?)` — returns each employee's pay stub PDF
 - `get_w2(employee_id, tax_year, copy?, employer_id?)`: returns `download_url`, a link that works for 15 minutes, for one copy of a W-2 the household has already generated in NannyKeeper. Give the user the link and tell them to open it in their browser. Never the PDF, and never open the link yourself. Never generates a W-2
 - `get_schedule_h(tax_year, employer_id?)`: returns `download_url`, a link that works for 15 minutes, for the household's Schedule H, or `schedule_h_unavailable` with a reason. Give the user the link

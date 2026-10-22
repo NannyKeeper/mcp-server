@@ -7,7 +7,7 @@
  * single-household key has no tool that returns either ID.
  */
 
-import { getToolContext, type ToolContext } from "../context.ts";
+import { CLIENT_HEADER, getToolContext, type ToolContext } from "../context.ts";
 
 const MISSING_KEY =
   "NANNYKEEPER_API_KEY environment variable is not set. Get a key at nannykeeper.com/developers/keys";
@@ -26,6 +26,8 @@ async function getJson(
         Authorization: `Bearer ${apiKey}`,
         "Content-Type": "application/json",
         ...(init.headers ?? {}),
+        // Last, so no caller's headers can drop the label.
+        ...CLIENT_HEADER,
       },
     });
     const data = await response.json();

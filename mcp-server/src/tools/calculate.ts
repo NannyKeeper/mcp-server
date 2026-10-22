@@ -4,7 +4,7 @@
  * Calls the NannyKeeper API to calculate household employer taxes.
  */
 
-import { getToolContext, type ToolContext } from "../context.ts";
+import { CLIENT_HEADER, getToolContext, type ToolContext } from "../context.ts";
 
 /**
  * ⛔ THE DESCRIPTOR CONST THAT USED TO LIVE HERE WAS DEAD AND HAS BEEN REMOVED.
@@ -40,6 +40,7 @@ export async function executeCalculate(args: {
       method: "POST",
       headers: {
         Authorization: `Bearer ${apiKey}`,
+        ...CLIENT_HEADER,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({

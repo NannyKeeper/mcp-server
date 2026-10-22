@@ -5,7 +5,8 @@
  * Creates a payroll record with full tax calculations and YTD tracking.
  */
 
-import { getToolContext, type ToolContext } from "../context.ts";
+import { CLIENT_HEADER, getToolContext, type ToolContext } from "../context.ts";
+import type { ReimbursementLine } from "./reimbursements.ts";
 
 export async function executeRunPayroll(args: {
   employer_id?: string;
@@ -23,6 +24,7 @@ export async function executeRunPayroll(args: {
   confirm_large_payroll?: boolean;
   confirm_ach_debit?: boolean;
   voluntary_set_aside?: { skip?: boolean; amount?: number };
+  reimbursements?: ReimbursementLine[];
   off_cycle?: boolean;
   idempotency_key?: string;
 }, context?: ToolContext): Promise<string> {
@@ -37,6 +39,7 @@ export async function executeRunPayroll(args: {
   try {
     const headers: Record<string, string> = {
       Authorization: `Bearer ${apiKey}`,
+      ...CLIENT_HEADER,
       "Content-Type": "application/json",
     };
 
@@ -64,6 +67,10 @@ export async function executeRunPayroll(args: {
             payment_method: args.payment_method || "check",
             ...(args.voluntary_set_aside
               ? { voluntary_set_aside: args.voluntary_set_aside }
+              : {}),
+            // Sent unchanged: same field names and limits as the API.
+            ...(args.reimbursements?.length
+              ? { reimbursements: args.reimbursements }
               : {}),
           },
         ],

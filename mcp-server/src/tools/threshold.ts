@@ -4,7 +4,7 @@
  * Calls the NannyKeeper API to check one worker's annual FICA threshold.
  */
 
-import { getToolContext, type ToolContext } from "../context.ts";
+import { CLIENT_HEADER, getToolContext, type ToolContext } from "../context.ts";
 
 /**
  * ⛔ THE DESCRIPTOR CONST THAT USED TO LIVE HERE WAS DEAD AND HAS BEEN REMOVED.
@@ -47,6 +47,7 @@ export async function executeThreshold(args: {
       {
         headers: {
           Authorization: `Bearer ${apiKey}`,
+          ...CLIENT_HEADER,
         },
       }
     );

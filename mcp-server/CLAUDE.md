@@ -10,6 +10,7 @@ Calculate nanny taxes for all 50 US states.
 - `get_w2`: a 15-minute DOWNLOAD LINK (`download_url`) for one copy of an employee's W-2 for an ended tax year. ⛔ Never the PDF: a W-2 prints the full SSN and a tool result is read by the assistant's model, so the tool always asks the API for `delivery: "link"` and the person opens the link. Do not "align" it with `get_pay_stub`'s attached file. Only a W-2 the household already generated in the dashboard; never generates one (`w2_not_generated`). Hosted and npm identical (added 1.16.0)
 - `get_schedule_h`: a 15-minute download link for the household's Schedule H for an ended tax year, through the dashboard's own Download procedure; its refusals come back as `schedule_h_unavailable` with a `reason`. A link for the same reason as `get_w2` (added 1.16.0)
 - `get_quarter_taxes`: a quarter's tax figures as the Taxes page shows them, from `GET /api/v1/taxes/quarterly`, passed through unchanged. ⛔ Never summarise it in the tool: a null amount is NannyKeeper refusing to state a figure (`waiting_on`), and a summary is where a null becomes a 0 (added 1.17.0)
+- `list_payrolls`: the household's payrolls from `GET /api/v1/payrolls`, newest first, filtered by `employee_id` and an inclusive `pay_date_from`/`pay_date_to`, each naming the `employee_ids` it paid. Passed through unchanged. Registered from its own module, `tools/list-payrolls.ts` (added 1.18.0)
 - `calculate_nanny_taxes` — Full federal + state tax breakdown
 - `check_threshold` — Whether wages trigger employer tax obligations
 - `preview_payroll` — Dry-run payroll calc, returns taxes/net pay without creating a record (Starter+ required)
@@ -18,7 +19,7 @@ Calculate nanny taxes for all 50 US states.
 - `manage_autopilot` — Pause / resume / skip / disable an existing enrollment. **Enrolling is NOT exposed** — it captures a standing recurring ACH authorization that must be employer-driven in-app. (Plus/Professional, `ach` scope) — added 1.9.0
 - `get_state_filing_status` — The employer's state agency accounts (UC, withholding, SDI) per state, last-four only. Each account has a status: `registered`, `pending`, `required`, or `not_required`. ⛔ `not_required` means this household genuinely does not owe that registration — most often because they and their employee agreed not to withhold state income tax — so never tell them to go register for it. A registration URL is returned only where there is still something to open or finish. Takes an optional `employer_id` — omit it for a single-household account; a **test-mode key must pass one**, because a key's default household is always the real one and the endpoint enforces the test/live boundary.
 
-**Declare tool parameters in `server.ts`, never in the tool descriptor.** `server.tool()` takes its own zod shape, so an `inputSchema` on the exported descriptor is read by nothing. The same applies to the tool description: `server.ts` must import the descriptor's `name` and `description` rather than restating them, or the copy an agent actually reads can drift from the one being edited. `index.ts` only starts the stdio transport. Hosted callers pass request-scoped credentials to the same server factory.
+**Declare tool parameters in the `server.tool()` call, never in the tool descriptor.** A tool is either registered in `server.ts` or, from 1.18.0, from its own module through a `register<Tool>(server, context)` function that `server.ts` calls (`tools/list-payrolls.ts`), so a new tool does not edit another's registration. `server.tool()` takes its own zod shape, so an `inputSchema` on the exported descriptor is read by nothing. The same applies to the tool description: the registering call must import the descriptor's `name` and `description` rather than restating them, or the copy an agent actually reads can drift from the one being edited. `index.ts` only starts the stdio transport. Hosted callers pass request-scoped credentials to the same server factory.
 
 ## Autopilot (get_autopilot, manage_autopilot)
 Autopilot auto-runs each period's payroll onto the existing scheduled-fire path so a household never misses a paycheck. The MCP surface is **manage-only**: read status/enrollments and pause/resume/skip/disable. Turning it ON must happen in the app (standing ACH authorization = employer-driven consent), so there is no enroll tool — `POST /api/v1/autopilot/enroll` returns 403 pointing back to the app. `skip` with `through_date` skips every period up to that date (vacation). Confirm any management action with the user before calling.
@@ -34,6 +35,9 @@ API callers with direct-deposit payments must tick the same safety gates the UI 
 - `confirm_ach_debit: true` for the first-ever DD payroll on an employer, or when >30 days have elapsed since the last DD authorization
 
 These flags exist even for server-to-server callers as a safety measure. Agents should only set them after verifying the amounts with the user.
+
+## Reimbursements (run_payroll, preview_payroll)
+`reimbursements` is the API's `employees[].reimbursements`, sent through unchanged: up to 10 lines of `{ type, amount, description?, miles?, rate_per_mile? }`. ⛔ Its schema lives in `tools/reimbursements.ts` and must keep the API's exact limits; a test in the application repository holds the two to the same boundaries. A mileage line with miles is priced by the API (amount 0), at `rate_per_mile` when sent, else at the IRS rate the API holds for the pay period and pay date; a year it holds none for answers `mileage_rate_unavailable`. The one array input in the server, which is why `MAX_TOOL_INPUT_ELEMENTS` names it.
 
 ## Voluntary set-aside (run_payroll, preview_payroll)
 The optional `voluntary_set_aside: { skip?, amount? }` field overrides the employee's recurring set-aside rule for a single paycheck. The recurring rule (e.g., 2% of gross for OH municipal courtesy withholding) is configured via the dashboard — this field can only override or skip per-payroll. Omit the field to apply the rule normally.
@@ -65,3 +69,6 @@ Get employee_id (and the household's employer_id) from `list_employees`.
 household the key belongs to. Pass it only when one account manages several.
 
 Full API docs: https://www.nannykeeper.com/developers/reference
+
+## Client label
+Every API request carries `X-NannyKeeper-Client: mcp` (`CLIENT_HEADER` in `context.ts`), so the API can count MCP use of an endpoint apart from direct API use. It is a label only and grants nothing. A new tool's fetch spreads it like the others.

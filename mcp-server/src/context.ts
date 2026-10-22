@@ -11,3 +11,10 @@ export function getToolContext(context?: ToolContext): ToolContext {
     apiBase: process.env.NANNYKEEPER_API_URL || "https://www.nannykeeper.com",
   };
 }
+
+/**
+ * Sent with every API request. A label that lets NannyKeeper count MCP use of
+ * an endpoint separately from direct API use of the same endpoint; the API
+ * never grants or refuses anything because of it.
+ */
+export const CLIENT_HEADER = { "X-NannyKeeper-Client": "mcp" } as const;

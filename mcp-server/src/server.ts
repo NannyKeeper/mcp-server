@@ -9,6 +9,8 @@ import {
   stateFilingStatusTool,
 } from "./tools/state-filing-status.ts";
 import { executeGetAutopilot, executeManageAutopilot } from "./tools/autopilot.ts";
+import { reimbursementsParam } from "./tools/reimbursements.ts";
+import { registerListPayrolls } from "./tools/list-payrolls.ts";
 import {
   executeGetPayStub,
   executeGetW2,
@@ -39,9 +41,12 @@ const EMPLOYER_ID_OPTIONAL = z
  * Cap on array elements plus object members in one tools/call `arguments`
  * (GHSA-46jr-4wx8-v453). The SDK counts them before validation and
  * has no limit unless one is set, so an object with tens of thousands of keys
- * inside the 64KB body cap could exhaust memory. No tool takes an array or a
- * record, and the widest (run_payroll) has about 22 members, so 256 refuses
- * nothing real. Raise it if a tool ever gains an array input.
+ * inside the 64KB body cap could exhaust memory. The one array input is
+ * `reimbursements` on preview_payroll and run_payroll: at most 10 lines of 5
+ * members, so the widest call (run_payroll, about 22 members plus 10 + 50 for
+ * a full set of lines) stays near 85, and 256 refuses nothing real. A test
+ * sends the largest valid run_payroll call through the real server to hold
+ * that. Raise this if an input grows past it.
  */
 export const MAX_TOOL_INPUT_ELEMENTS = 256;
 
@@ -152,6 +157,7 @@ server.tool(
     "work/residence states have a reciprocal agreement — applied=true means the work state's income " +
     "tax was suppressed under the employer's certificate attestation (set up in the NannyKeeper app " +
     "on the employee's profile); applied=false names the certificate still to collect. " +
+    "Mileage and other reimbursements go in reimbursements, the same lines run_payroll takes. " +
     "Use this to validate your request before calling run_payroll. " +
     "Same parameters as run_payroll. Requires a Starter+ subscription. " +
     "pay_date is optional. When omitted, the server picks the earliest valid business day on or " +
@@ -183,6 +189,7 @@ server.tool(
       .describe(
         "Override or skip the employee's voluntary post-tax set-aside rule for this paycheck only. The recurring rule itself is configured via the dashboard. Omit this field to apply the rule normally."
       ),
+    reimbursements: reimbursementsParam,
   },
   {
     title: "Preview Payroll",
@@ -219,6 +226,9 @@ server.tool(
     "if YTD or rate configs change between approve and fire. " +
     "Direct deposit callers: set confirm_large_payroll=true for totals >$5,000 or any single " +
     "net pay >$3,000; set confirm_ach_debit=true for first-time DD or if no DD in 30 days. " +
+    "Mileage, transit, parking and other reimbursements: pass up to 10 lines in reimbursements. For mileage send " +
+    "type mileage, the miles and amount 0, and NannyKeeper prices the miles at the IRS rate it holds for the pay " +
+    "period and pay date unless you pass rate_per_mile; a year it holds no rate for is refused with mileage_rate_unavailable. " +
     "Tip: use preview_payroll first to validate your request and see results before committing. " +
     "Get employee_id from list_employees. employer_id is optional: leave it out and the API uses " +
     "the household your API key belongs to (pass it only when one account manages several households)."
@@ -264,6 +274,7 @@ server.tool(
       .describe(
         "Override or skip the employee's voluntary post-tax set-aside rule for this paycheck only. The recurring rule itself is configured via the dashboard. Omit this field to apply the rule normally."
       ),
+    reimbursements: reimbursementsParam,
     idempotency_key: context?.publicConnection ? z.string().trim().min(1).max(255).describe("Unique key for this approved payroll. Reuse the same key with identical inputs when retrying.") : z
       .string()
       .optional()
@@ -415,7 +426,8 @@ server.tool(
   context?.publicConnection ? publicDescriptions.get_payroll : (
   "Read payrolls. With payroll_id: that payroll's status, dates, and each employee's gross pay, every deduction " +
     "(federal, Social Security, Medicare, state, local), net pay, and employer taxes. Without payroll_id: the " +
-    "household's payrolls, newest first, with totals. Use it to confirm what run_payroll created. Read-only."
+    "household's payrolls, newest first, with totals (list_payrolls filters that list by employee and pay date). " +
+    "Use it to confirm what run_payroll created. Read-only."
   ),
   {
     payroll_id: z.string().uuid().optional().describe("A payroll id from run_payroll. Leave it out to list payrolls."),
@@ -529,6 +541,8 @@ server.tool(
   },
   async (args) => toolResult(await executeGetScheduleH(args, context), context?.publicConnection)
 );
+
+registerListPayrolls(server, context);
 
 // Register get_quarter_taxes tool (read, 1.17.0)
 server.tool(
