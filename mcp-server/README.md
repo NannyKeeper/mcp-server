@@ -57,7 +57,7 @@ List the household's employees and return the household's `employer_id`. Call th
 
 ### `get_payroll`
 
-With `payroll_id`, read one payroll: status, dates, and each employee's gross pay, every deduction (federal, Social Security, Medicare, state, local), net pay, and employer taxes. Without it, list the household's payrolls, newest first.
+With `payroll_id`, read one payroll: status, dates, and each employee's gross pay, every deduction (federal, Social Security, Medicare, state, local), net pay, and employer taxes. Without it, list the household's payrolls, newest first. For a paycheck the family pays outside NannyKeeper, `paid_outside` gives how the family says it paid and whether the employee confirmed it arrived: `confirmed`, `mismatch`, `waiting` or `not_asked` (added 1.20.0).
 
 **Parameters:**
 - `payroll_id` (optional) — A payroll ID from `run_payroll`
@@ -65,7 +65,7 @@ With `payroll_id`, read one payroll: status, dates, and each employee's gross pa
 
 ### `list_payrolls`
 
-The household's payrolls, newest first, each with status, pay period, pay date, totals and the `employee_ids` it paid. Totals are for the whole payroll; `get_payroll` has each employee's figures. Read-only (added 1.18.0).
+The household's payrolls, newest first, each with status, pay period, pay date, totals, the `employee_ids` it paid and `paid_outside_confirmation` (added 1.20.0). Totals are for the whole payroll; `get_payroll` has each employee's figures. Read-only (added 1.18.0).
 
 **Parameters:**
 - `employee_id` (optional) — Only payrolls that paid this employee. One not in the household answers `not_found`

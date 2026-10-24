@@ -24,12 +24,12 @@
     "url": "https://github.com/nannykeeper/mcp-server",
     "source": "github"
   },
-  "version": "1.19.0",
+  "version": "1.20.0",
   "packages": [
     {
       "registryType": "npm",
       "identifier": "@nannykeeper/mcp-server",
-      "version": "1.19.0",
+      "version": "1.20.0",
       "transport": {
         "type": "stdio"
       },

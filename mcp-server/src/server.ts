@@ -417,7 +417,10 @@ server.tool(
   "Read payrolls. With payroll_id: that payroll's status, dates, and each employee's gross pay, every deduction " +
     "(federal, Social Security, Medicare, state, local), net pay, and employer taxes. Without payroll_id: the " +
     "household's payrolls, newest first, with totals (list_payrolls filters that list by employee and pay date). " +
-    "Use it to confirm what run_payroll created. Read-only."
+    "Use it to confirm what run_payroll created. For a paycheck the family pays outside NannyKeeper, paid_outside gives " +
+    "family_method (how the family says it paid) and confirmation: confirmed, mismatch (the employee said it does not " +
+    "match what arrived; NannyKeeper does not know the difference, so suggest the two of them talk), waiting, or " +
+    "not_asked. A missing confirmation is never a problem. Read-only."
   ),
   {
     payroll_id: z.string().uuid().optional().describe("A payroll id from run_payroll. Leave it out to list payrolls."),

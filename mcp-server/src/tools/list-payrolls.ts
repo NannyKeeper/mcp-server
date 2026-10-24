@@ -17,7 +17,8 @@ import { toolResult } from "../public-profile.ts";
 
 export const LIST_PAYROLLS_DESCRIPTION =
   "List the household's payrolls, newest first, each with its status, pay period, pay date, total gross pay, " +
-  "total net pay, employer taxes and the employee_ids it paid. Filter with employee_id (only payrolls that paid " +
+  "total net pay, employer taxes, the employee_ids it paid and paid_outside_confirmation (for paychecks paid outside " +
+  "NannyKeeper: confirmed, mismatch, waiting, or null when nobody was asked). Filter with employee_id (only payrolls that paid " +
   "that employee) and pay_date_from / pay_date_to (inclusive pay-date range, YYYY-MM-DD). Use limit for " +
   '"the last three payrolls" (limit: 3). When has_more is true, pass next_cursor back as cursor for the next ' +
   "page; a cursor it did not issue answers invalid_cursor, so start again without one. Totals are for the whole payroll; call get_payroll with a payroll id for each employee's gross pay, " +
