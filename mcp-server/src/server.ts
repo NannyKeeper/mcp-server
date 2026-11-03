@@ -23,6 +23,7 @@ import {
 } from "./tools/household.ts";
 
 import type { ToolContext } from "./context.ts";
+import { applyConnectionLimits } from "./connection.ts";
 import { publicDescriptions, toolResult } from "./public-profile.ts";
 import { registerRecordTaxPayment } from "./tools/tax-payment.ts";
 
@@ -42,7 +43,11 @@ export const MAX_TOOL_INPUT_ELEMENTS = 256;
 
 /** A fresh server and credential closure for each hosted request. */
 export function createNannyKeeperServer(version: string, context?: ToolContext) {
-const server = new McpServer({ name: "nannykeeper", version }, { maxToolInputElements: MAX_TOOL_INPUT_ELEMENTS });
+const server = new McpServer({ name: "nannykeeper", version }, {
+  maxToolInputElements: MAX_TOOL_INPUT_ELEMENTS,
+  ...(context?.connection?.instructions ? { instructions: context.connection.instructions } : {}),
+});
+if (context?.connection) applyConnectionLimits(server, context.connection);
 
 /**
  * Authority: SSA Contribution and Benefit Base; IRS Pubs. 15 and 926 (2026).
@@ -204,7 +209,7 @@ server.tool(
     "Returns the finalized status (processing/pending_funding/completed/scheduled) plus full tax breakdown, " +
     "net pay, employer costs, and the payroll ID for reference. " +
     "Requires a Starter+ subscription. " +
-    "Plans cap active employees per employer (Starter 1, Plus 5, Professional 5 included, expandable " +
+    "Plans cap active employees per employer (Starter 1, Plus 5, Pro 5 included, expandable " +
     "to 25 at $6/mo each); if the roster exceeds the plan's count, the API returns 403 with guidance — " +
     "the user adds employees at Settings → Billing in the dashboard (never billed implicitly via API), then retry. " +
     "pay_date is optional. When omitted, the server picks the earliest valid business day on or " +
@@ -271,7 +276,7 @@ server.tool(
       .describe("Unique key to prevent duplicate payroll creation (e.g., 'payroll-2026-04-07-emp123')"),
   },
   {
-    title: "Run Payroll",
+    title: "Run payroll",
     readOnlyHint: false,
     destructiveHint: true,
     idempotentHint: false,
@@ -326,7 +331,7 @@ server.tool(
     "(status, standard hours, expected net, next pay date) plus eligibility and a 3-payday schedule " +
     "preview — or, if not enrolled, WHY (the eligibility reason, e.g. not_plus / insufficient_history). " +
     "Without employee_id: the list of the employer's active enrollments. Read-only. " +
-    "Requires a Plus/Professional key. Get employee_id from list_employees; employer_id is optional."
+    "Requires a Plus/Pro key. Get employee_id from list_employees; employer_id is optional."
   ),
   {
     employer_id: EMPLOYER_ID_OPTIONAL,
@@ -359,7 +364,7 @@ server.tool(
     "`skip` (skip the next period; with through_date, skip every period up to that date for a vacation), " +
     "`disable` (turn Autopilot off — soft-deleted so the ledger + ACH authorization are retained; the employee can re-enroll in-app). " +
     "Turning Autopilot ON is NOT available here — it captures a standing recurring ACH authorization that must be " +
-    "done by the employer in the app. Requires a Plus/Professional key. Confirm the action with the user before calling."
+    "done by the employer in the app. Requires a Plus/Pro key. Confirm the action with the user before calling."
   ),
   {
     employer_id: EMPLOYER_ID_OPTIONAL,

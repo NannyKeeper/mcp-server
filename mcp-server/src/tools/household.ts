@@ -170,7 +170,13 @@ async function getTaxFormLink(
 ): Promise<string> {
   const result = await getJson(
     path,
-    { method: "POST", body: JSON.stringify({ ...body, delivery: "link" }) },
+    {
+      method: "POST",
+      // The hosted connector's link opens only for the family's signed-in
+      // NannyKeeper session: its transcript is held by the assistant's
+      // vendor. The npm package's stays a plain link.
+      body: JSON.stringify({ ...body, delivery: "link", ...(context?.publicConnection ? { link_requires_sign_in: true } : {}) }),
+    },
     context,
   );
   if (!result.ok) return result.text;
@@ -190,9 +196,12 @@ async function getTaxFormLink(
     file_name: download.file_name,
     download_url: download.url,
     expires_at: download.expires_at,
-    instructions:
-      "Give the user this link and tell them to open it in their browser to download the PDF. " +
-      "It works for 15 minutes. Do not open or fetch the link yourself.",
+    instructions: context?.publicConnection
+      ? "Give the user this link and tell them to open it in the browser where they are signed in to NannyKeeper " +
+        "(from a phone app, their usual browser, not the app's own). It works for 15 minutes and only for their own " +
+        "NannyKeeper login. Do not open or fetch the link yourself."
+      : "Give the user this link and tell them to open it in their browser to download the PDF. " +
+        "It works for 15 minutes. Do not open or fetch the link yourself.",
   });
 }
 

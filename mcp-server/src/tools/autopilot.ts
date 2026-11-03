@@ -5,7 +5,7 @@
  * status/history and MANAGE an existing enrollment (pause / resume / skip /
  * disable). Enrollment itself is intentionally NOT exposed — turning Autopilot
  * on captures a standing recurring ACH authorization that must be employer-
- * driven in the app. Requires a Plus/Professional key (the `ach` scope).
+ * driven in the app. Requires a Plus/Pro key (the `ach` scope).
  */
 
 import { CLIENT_HEADER, getToolContext, type ToolContext } from "../context.ts";
@@ -13,7 +13,7 @@ import { CLIENT_HEADER, getToolContext, type ToolContext } from "../context.ts";
 function missingKey(): string {
   return JSON.stringify({
     error:
-      "NANNYKEEPER_API_KEY environment variable is not set. Autopilot management requires a Plus/Professional key: nannykeeper.com/developers/keys",
+      "NANNYKEEPER_API_KEY environment variable is not set. Autopilot management requires a Plus/Pro key: nannykeeper.com/developers/keys",
   });
 }
 
